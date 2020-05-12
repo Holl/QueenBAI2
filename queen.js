@@ -14,6 +14,7 @@ module.exports = function(queenName, empressOrders, queenObj){
 
 
 function normalEconomySpawning(queenName, queenObj){
+    db(queenObj['energyStructuers'])
     // First, if all the spawns are active, we don't really need to do anything.
     if(queenObj['inactiveSpawns'].length == 0){
         console.log("All spawns anywhere busy");
@@ -46,6 +47,10 @@ function normalEconomySpawning(queenName, queenObj){
     var harvesterArray = queenObj['bees']['harvester'];
     var haulerArray = queenObj['bees']['hauler'];
     var localSources = queenObj['localSources'];
+
+    for (var i=0; i < localSources.length;  i++){
+
+    }
     
     if (!harvesterArray){
         creepCreator(queenObj['inactiveSpawns'][0], 
@@ -166,7 +171,31 @@ function harvesterMining(beeName, sourceName, delivery){
 }
 
 function hauling(beeName, sourceName){
-    
+    var source = Game.getObjectById(sourceName);
+    var bee = Game.creeps[beeName];
+    if(bee.carry.energy == 0){
+        console.log(Game.getObjectById(sourceName));
+        var target = Game.getObjectById(sourceName).pos.findInRange(
+            FIND_DROPPED_RESOURCES,
+            1
+        )[0];
+        if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
+            bee.moveTo(target.pos, {visualizePathStyle: {stroke: '#ffaa00'}});
+        }
+    }
+    else {
+        var targets = bee.room.find(FIND_STRUCTURES, {
+            filter: (structure) => {
+                return (structure.structureType == STRUCTURE_SPAWN)
+            }
+        });
+        if(targets.length > 0) {
+            if(bee.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                bee.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
+            }
+        }
+            
+    }
 }
 
 function creepCreator(spawnName, roleName, creepLevel, queenName, metaData){
