@@ -1,3 +1,6 @@
+const verboseLogging = 0;
+const noHaulers = 2;
+
 module.exports = function(queenName, empressOrders, queenObj){
 
     // TODO: Logic to objey the empress
@@ -6,6 +9,7 @@ module.exports = function(queenName, empressOrders, queenObj){
 
     //"OTHERWISE" we should just expand economy:
     normalEconomySpawning(queenName, queenObj);
+
     econScreepsFunction(queenName, queenObj);    
 }
 
@@ -14,13 +18,14 @@ module.exports = function(queenName, empressOrders, queenObj){
 
 
 function normalEconomySpawning(queenName, queenObj){
-    db(queenObj['energyStructuers'])
     // First, if all the spawns are active, we don't really need to do anything.
+    // Because we can't do antyhing.
     if(queenObj['inactiveSpawns'].length == 0){
         console.log("All spawns anywhere busy");
         return;
     }
 
+    // 
     var beeLevel = calculateLevel(queenObj['energyMax']);
 
     if (_.isEmpty(queenObj['bees'])){
@@ -41,62 +46,75 @@ function normalEconomySpawning(queenName, queenObj){
         }
     }
 
-    // We (eventually) want 1 harvester per resource.  This is probably a good place to start.
+    // So from the Herald's queen object, get the array of 
+    // bees that exist with harvester and hauler tasks.
 
-    // Check for the harvesters...
     var harvesterArray = queenObj['bees']['harvester'];
     var haulerArray = queenObj['bees']['hauler'];
     var localSources = queenObj['localSources'];
 
-    for (var i=0; i < localSources.length;  i++){
+    var harvestedSourceArray=[];
+    var hauledSourceObject={};
 
-    }
-    
-    if (!harvesterArray){
-        creepCreator(queenObj['inactiveSpawns'][0], 
-            "harvester", 
-            1, 
-            queenName, 
-            {'sourceTarget':localSources[0]}
-        )
-        return;
-    }
+    // Loop through all of our harvesters.
+    // The result of this is an array (harvestedSourceArray) of all the sources
+    // currently being mined.
 
-    if (!haulerArray){
-        creepCreator(queenObj['inactiveSpawns'][0], 
-                "hauler", 
-                1, 
-                queenName, 
-                {'sourceTarget':localSources[0]}
-            )
-        return;
+    for (var harvester in harvesterArray){
+        for (source in localSources){
+            if (Game.creeps[harvesterArray[harvester]].memory.source == localSources[source]){
+                harvestedSourceArray.push(localSources[source]);
+            }
+        }
     }
 
-    // for (var i = 0; i < localSources.length; i++){
-    //     for (var harvester in harvesterArray){
-    //         var sourceTarget = harvesterArray[harvester].memory.sourceTarget;
-    //         if(!localSources[i] == sourceTarget){
-    //             creepCreator(queenObj['inactiveSpawns'][0], 
-    //                 "harvester", 
-    //                 1, 
-    //                 queenName, 
-    //                 {'sourceTarget':localSources[i]}
-    //             )
-    //         }
-    //     }
+    // Same thing for haulers, but we had an object with each one.
+    // Easier to keep track of all of em that way.
 
-    //     for (var hauler in haulerArray){
-    //         var sourceTarget = haulerArray[hauler].memory.sourceTarget;
-    //         if(!localSources[i] == sourceTarget){
-    //             creepCreator(queenObj['inactiveSpawns'][0], 
-    //                 "hauler", 
-    //                 1, 
-    //                 queenName, 
-    //                 {'sourceTarget':localSources[i]}
-    //             )
-    //         }
-    //     }
-    // }
+    for (var hauler in haulerArray){
+        for (source in localSources){
+            if (Game.creeps[haulerArray[hauler]].memory.source == localSources[source]){
+                hauledSourceObject[localSources[source]] = haulerArray[hauler];
+            }
+        }
+    }
+
+    // So what isn't being mined?  unharvestSourceArray is an array of the leftover,
+    // unmined sources.
+    var unharvestedSourceArray = _.difference(localSources, harvestedSourceArray);
+
+    // Which should give us everyting we need.
+    // So, for all our local sources:
+    for (var source in localSources){
+        // If we there are no harvesters assinged to this source...
+        if (unharvestedSourceArray.includes(localSources[source])){
+            // Create a harvester bee and set it loose on the source.
+            // Return cuz we're done.
+            console.log("For source " + localSources[source] + " we're making a harvester.");
+            creepCreator(queenObj['inactiveSpawns'][0], 
+                'harvester', 
+                beeLevel,
+                queenName,
+                {'source':localSources[source]}
+            );
+            return;
+        }
+        else if (!hauledSourceObject[localSources[source]] || hauledSourceObject[localSources[source]].length < noHaulers){
+            // Otherwise, if hauledSourceObject doesn't have a value withe the key
+            // of source, we know that source doesn't have haulers.
+            // If it does, but he count is below our const, we still need more.
+            
+            console.log("Now a hauler");
+            creepCreator(queenObj['inactiveSpawns'][0], 
+                'hauler',
+                beeLevel, 
+                queenName,
+                {'source':localSources[source]}
+            );
+            return;
+        }
+    }
+
 }
 
 function econScreepsFunction(queenName, queenObj){
@@ -109,15 +127,13 @@ function econScreepsFunction(queenName, queenObj){
     }
 
     for (var bee in queenObj['bees']['harvester']){
-        var beeName = queenObj['bees']['harvester'][bee];;
-        var source = queenObj['localSources'][0];
-        harvesterMining(beeName, source);
+        var beeName = queenObj['bees']['harvester'][bee];
+        harvesterMining(beeName);
     }
 
     for (var bee in queenObj['bees']['hauler']){
-        var beeName = queenObj['bees']['hauler'][bee];;
-        var source = queenObj['localSources'][0];
-        hauling(beeName, source);
+        var beeName = queenObj['bees']['hauler'][bee];
+        hauling(beeName);
     }
 }
 
@@ -162,8 +178,17 @@ function starterMining(beeName, sourceName){
 }
 
 function harvesterMining(beeName, sourceName, delivery){
-    var source = Game.getObjectById(sourceName);
+    var source = '';
     var bee = Game.creeps[beeName];
+    if (sourceName){
+        console.log(sourceName)
+        var source = Game.getObjectById(sourceName);
+    }
+    else{
+        // console.log(bee.memory.source)
+        source = Game.getObjectById(bee.memory.source);
+    }
+    // console.log(bee.memory.source);
     if(bee.harvest(source) == ERR_NOT_IN_RANGE) {
             bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
         }
@@ -171,11 +196,16 @@ function harvesterMining(beeName, sourceName, delivery){
 }
 
 function hauling(beeName, sourceName){
-    var source = Game.getObjectById(sourceName);
+    var source = '';
     var bee = Game.creeps[beeName];
+    if (sourceName){
+        source = Game.getObjectById(sourceName);
+    }
+    else{
+        source = Game.getObjectById(bee.memory.source);
+    }
     if(bee.carry.energy == 0){
-        console.log(Game.getObjectById(sourceName));
-        var target = Game.getObjectById(sourceName).pos.findInRange(
+        var target = source.pos.findInRange(
             FIND_DROPPED_RESOURCES,
             1
         )[0];
@@ -205,8 +235,20 @@ function creepCreator(spawnName, roleName, creepLevel, queenName, metaData){
         ...{'role': roleName, 'queen': queenName},
         ...metaData
     }
-
     Game.spawns[spawnName].spawnCreep(body, name, { memory: finalMetaData});
+}
+
+function calculateCreepMaximums(localSource, spawnName){
+    var targetResources = Game.getObjectById(localSource).pos.findInRange(
+        FIND_DROPPED_RESOURCES,
+        1
+    );
+    var sumResources = 0;
+    for (var y=0; y< targetResources.length; y++){
+        sumResources += targetResources[y].energy;
+    }
+    var creepsMax = 0;
+    return Math.floor((sumResources/500)+1)
 }
 
 function checkTargetedCreepsAmount(scanData, targets, max, num, source){

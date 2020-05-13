@@ -18,6 +18,8 @@ var runEmpress = require('empress');
 var runQueen = require('queen');
 // The Captain relays the orders to the bees.
 var runCaptain = require('captain');
+// The Carpender decides what should be built, when and where.
+var runCarpender = require('carpender');
 
 module.exports.loop = function () {
     console.log("~~~~~~~~~~"+ Game.time+"~~~~~~~~~~");
