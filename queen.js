@@ -13,10 +13,6 @@ module.exports = function(queenName, empressOrders, queenObj){
     econScreepsFunction(queenName, queenObj);    
 }
 
-
-
-
-
 function normalEconomySpawning(queenName, queenObj){
     // First, if all the spawns are active, we don't really need to do anything.
     // Because we can't do antyhing.
@@ -60,6 +56,9 @@ function normalEconomySpawning(queenName, queenObj){
     // The result of this is an array (harvestedSourceArray) of all the sources
     // currently being mined.
 
+    // TOPDO: The following two loops seem REALLY similar,
+    // and I probably have to do it again.  Make them wet
+
     for (var harvester in harvesterArray){
         for (source in localSources){
             if (Game.creeps[harvesterArray[harvester]].memory.source == localSources[source]){
@@ -90,7 +89,6 @@ function normalEconomySpawning(queenName, queenObj){
         if (unharvestedSourceArray.includes(localSources[source])){
             // Create a harvester bee and set it loose on the source.
             // Return cuz we're done.
-            console.log("For source " + localSources[source] + " we're making a harvester.");
             creepCreator(queenObj['inactiveSpawns'][0], 
                 'harvester', 
                 beeLevel,
@@ -103,8 +101,7 @@ function normalEconomySpawning(queenName, queenObj){
             // Otherwise, if hauledSourceObject doesn't have a value withe the key
             // of source, we know that source doesn't have haulers.
             // If it does, but he count is below our const, we still need more.
-            
-            console.log("Now a hauler");
+
             creepCreator(queenObj['inactiveSpawns'][0], 
                 'hauler',
                 beeLevel, 
@@ -114,30 +111,121 @@ function normalEconomySpawning(queenName, queenObj){
             return;
         }
     }
-
-}
+};
 
 function econScreepsFunction(queenName, queenObj){
-    // db(queenObj);
 
+    // STARTER BEES
+    // Fire off the simple logic for our starter bees.
+    // They really just grab some energy from a source to get us started.
+    // Really super ineffective.
     for(var bee in queenObj['bees']['starter']){
         var beeName = queenObj['bees']['starter'][bee];
         var source = queenObj['localSources'][0];
         starterMining(beeName, source);
     }
 
+    // HARVESTER BEES
+    // Very dumb bees at the moment, but by design.
+    // The whole life cycle is, spawn, go to souce, mine until death.
     for (var bee in queenObj['bees']['harvester']){
         var beeName = queenObj['bees']['harvester'][bee];
-        harvesterMining(beeName);
+        var beeObj = Game.creeps[beeName];
+        source = Game.getObjectById(beeObj.memory.source);
+        mineSource(beeObj, source);
+    }
+
+
+    // HAULER BEES
+    // The important work force for our hive.  Now we have some actual logic.
+    // But first we need to prepare.
+    var thirstyStructuers = [];
+
+    for (var structureName in queenObj['energyStructuers']){
+        var struct = queenObj['energyStructuers'][structureName];
+        if(struct['store']["energy"]<struct['energyCapacity']){
+            var howThirsty = struct['energyCapacity'] - struct['store']["energy"];
+            var obj = {"name": struct.name, "id": struct.id, "thirst":howThirsty}
+            thirstyStructuers.push(obj);
+        }
     }
 
     for (var bee in queenObj['bees']['hauler']){
         var beeName = queenObj['bees']['hauler'][bee];
-        hauling(beeName);
+        var bee = Game.creeps[beeName];
+        if (bee.memory.deliveryTargetID){
+            for (var struct in thirstyStructuers){
+                if (thirstyStructuers[struct]['id'] == bee.memory.deliveryTargetID){
+                    if (thirstyStructuers[struct]['thirst'] < bee['carry']['energy']){
+                        thirstyStructuers.splice(struct,1);
+                    }
+                    else{
+                        thirstyStructuers[struct]['thirst'] = thirstyStructuers[struct]['thirst'] - bee['carry']['energy'];
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    for (var bee in queenObj['bees']['hauler']){
+        var beeName = queenObj['bees']['hauler'][bee];
+        var bee = Game.creeps[beeName];
+        var source = Game.getObjectById(bee.memory.source);
+        if(bee.carry.energy == 0){
+            bee.memory.deliveryTargetID = '';
+            var target = source.pos.findInRange(FIND_DROPPED_RESOURCES,1)[0];
+            if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
+                bee.moveTo(target.pos, {visualizePathStyle: {stroke: '#ffaa00'}});
+            }
+        }
+        else {
+            if (thirstyStructuers.length > 0){
+                if(bee.memory.deliveryTargetID){
+                    console.log("Bee "+bee+" wants to bo to "+ bee.memory.deliveryTargetID);
+                    var deliveryID = bee.memory.deliveryTargetID;
+                    var deliveryObj = Game.getObjectById(deliveryID);
+                    console.log(bee.transfer(deliveryObj, RESOURCE_ENERGY));
+                    if(bee.transfer(deliveryObj, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                        bee.moveTo(deliveryObj, {visualizePathStyle: {stroke: '#ffffff'}});
+                    }
+                    if(bee.transfer(deliveryObj, RESOURCE_ENERGY) == ERR_FULL){
+                        bee.memory.deliveryTargetID = '';
+                    }
+                }
+                else{
+                    bee.memory.deliveryTargetID = thirstyStructuers[0]['id'];
+                    if (thirstyStructuers[0]['thirst'] < bee['carry']['energy']){
+                        console.log(thirstyStructuers);
+                        thirstyStructuers.splice(0,1);
+                        console.log(thirstyStructuers)
+                    }
+                    else{
+                        thirstyStructuers[0]['thirst'] = thirstyStructuers[0]['thirst'] - bee['carry']['energy'];
+                    }
+                }
+            }
+            else{
+                upgradeController(bee);
+            }    
+        }
     }
 }
 
+function mineSource(bee, source){
+    if(bee.harvest(source) == ERR_NOT_IN_RANGE) {
+        bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
+    }
+    else(bee.harvest(source));
+}
 
+function upgradeController(bee){
+    bee.signController(bee.room.controller, "Rebuilding scripts from scratch after an absence, so expect weird behavior as I test. I am harmless.");
+    bee.moveTo(bee.room.controller, {visualizePathStyle: {stroke: '#ffffff'}});
+    
+    console.log(bee.upgradeController(bee.room.controller));
+}
 
 function calculateLevel(energyMax){
     if (energyMax < 550){
@@ -155,6 +243,8 @@ function calculateLevel(energyMax){
 };
 
 function starterMining(beeName, sourceName){
+    // This is pretty old school shit.
+    // And should probably be retired.
     var source = Game.getObjectById(sourceName);
     var bee = Game.creeps[beeName];
     if(bee.carry.energy < bee.carryCapacity) {
@@ -185,10 +275,8 @@ function harvesterMining(beeName, sourceName, delivery){
         var source = Game.getObjectById(sourceName);
     }
     else{
-        // console.log(bee.memory.source)
         source = Game.getObjectById(bee.memory.source);
     }
-    // console.log(bee.memory.source);
     if(bee.harvest(source) == ERR_NOT_IN_RANGE) {
             bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
         }
@@ -273,15 +361,6 @@ function getBody(role, level){
     }
 }
 
-function getBody_Swarm(level){
-    switch (level){
-        case 1: return [TOUGH, MOVE, MOVE, ATTACK];
-        case 2: return [TOUGH, MOVE, MOVE, ATTACK];
-        case 3: return [TOUGH, MOVE, MOVE, ATTACK];
-        case 4: return [TOUGH, MOVE, MOVE, ATTACK];
-    }
-}
-
 function getBody_Starter(level){
     switch (level){
         case 1: return [MOVE, 
@@ -292,15 +371,6 @@ function getBody_Starter(level){
 function getBody_Scout(level){
     switch (level){
         case 1: return [MOVE];
-    }
-}
-
-function getBody_Capture(level){
-    switch (level){
-        case 1: return [CLAIM, MOVE];
-        case 2: return [CLAIM, MOVE];
-        case 3: return [CLAIM, MOVE];
-        case 4: return [CLAIM, MOVE];
     }
 }
 
@@ -362,42 +432,37 @@ function getBody_Defender(level){
     }
 }
 
-function getBody_Worker(level){
-    switch (level){
-        case 1: return [
-                        CARRY, 
-                        MOVE, 
-                        WORK
-                        ]
-        case 2: return [
-                        CARRY, CARRY, CARRY,
-                        WORK, WORK, 
-                        MOVE, MOVE, MOVE
-                        ];
-        case 3: return [
-                        CARRY, CARRY, CARRY, CARRY, CARRY,
-                        WORK, WORK, WORK, WORK,
-                        MOVE, MOVE, MOVE
-                        ];
-        case 4: return [
-                        CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
-                        WORK, WORK, WORK, WORK, WORK,
-                        MOVE, MOVE, MOVE, MOVE, MOVE, MOVE
-                        ];
-    }
-    
-}
-
 function getBody_Hauler(level){
     switch (level){
-        // 550, 800, 1300
-        case 1: return [CARRY, MOVE]
-        case 2: return [CARRY, CARRY, CARRY, CARRY, 
-                        MOVE, MOVE, MOVE, MOVE];
-        case 3: return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
-                        MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
-        case 4: return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
-                        MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
+            case 1: return [
+                            CARRY, 
+                            MOVE, 
+                            WORK
+                            ]
+            case 2: return [
+                            CARRY, CARRY, CARRY,
+                            WORK, WORK, 
+                            MOVE, MOVE, MOVE
+                            ];
+            case 3: return [
+                            CARRY, CARRY, CARRY, CARRY, CARRY,
+                            WORK, WORK, WORK, WORK,
+                            MOVE, MOVE, MOVE
+                            ];
+            case 4: return [
+                            CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
+                            WORK, WORK, WORK, WORK, WORK,
+                            MOVE, MOVE, MOVE, MOVE, MOVE, MOVE
+                            ];
+        }
+}
+
+function getBody_Capture(level){
+    switch (level){
+        case 1: return [CLAIM, MOVE];
+        case 2: return [CLAIM, MOVE];
+        case 3: return [CLAIM, MOVE];
+        case 4: return [CLAIM, MOVE];
     }
 }
 

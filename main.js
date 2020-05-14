@@ -22,7 +22,7 @@ var runCaptain = require('captain');
 var runCarpender = require('carpender');
 
 module.exports.loop = function () {
-    console.log("~~~~~~~~~~"+ Game.time+"~~~~~~~~~~");
+    // console.log("~~~~~~~~~~"+ Game.time+"~~~~~~~~~~");
     
     var heraldReport = runHerald();
 

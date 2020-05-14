@@ -47,7 +47,8 @@ module.exports = function(){
             var spawnObjArray = Game.spawns[spawn].room.find(FIND_MY_SPAWNS);
             var energyStructuers = Game.spawns[spawn].room.find(FIND_STRUCTURES, {
                     filter: (structure) => {
-                        return (structure.structureType == STRUCTURE_STORAGE || 
+                        return (structure.structureType == STRUCTURE_SPAWN || 
+                            structure.structureType == STRUCTURE_STORAGE || 
                             structure.structureType == STRUCTURE_TOWER ||
                             structure.structureType == STRUCTURE_EXTENSION);
                     }
