@@ -10,14 +10,17 @@ module.exports = function(queenName, empressOrders, queenObj){
     //"OTHERWISE" we should just expand economy:
     normalEconomySpawning(queenName, queenObj);
 
-    econScreepsFunction(queenName, queenObj);    
+    econScreepsFunction(queenName, queenObj);
+
+    var terrain = Game.rooms['E5N22'].getTerrain();
+
+    // db(terrain.getRawBuffer());    
 }
 
 function normalEconomySpawning(queenName, queenObj){
     // First, if all the spawns are active, we don't really need to do anything.
     // Because we can't do antyhing.
     if(queenObj['inactiveSpawns'].length == 0){
-        console.log("All spawns anywhere busy");
         return;
     }
 
@@ -29,7 +32,6 @@ function normalEconomySpawning(queenName, queenObj){
         if (beeLevel == 1 || queenObj['energyNow'] < 500){
             // This will run if our creep level is 1, meaning that we're probably starting off
             // or things are really bad.
-            console.log("No bees under Queen "+ queenName +"'s command!");
             creepCreator(queenObj['inactiveSpawns'][0], "starter", 1, queenName);
             return;
         }
@@ -73,7 +75,12 @@ function normalEconomySpawning(queenName, queenObj){
     for (var hauler in haulerArray){
         for (source in localSources){
             if (Game.creeps[haulerArray[hauler]].memory.source == localSources[source]){
-                hauledSourceObject[localSources[source]] = haulerArray[hauler];
+                if(!hauledSourceObject[localSources[source]]){
+                     hauledSourceObject[localSources[source]] =[haulerArray[hauler]];
+                }
+                else{
+                     hauledSourceObject[localSources[source]].push(haulerArray[hauler])
+                }
             }
         }
     }
@@ -141,6 +148,12 @@ function econScreepsFunction(queenName, queenObj){
     // But first we need to prepare.
     var thirstyStructuers = [];
 
+
+    // First, we want to prepare an array of objects-
+    // these are all the structures that require energy in some way.
+    // This is the concept of "Thirst"- a number value representing how much
+    // energy the building needs.
+
     for (var structureName in queenObj['energyStructuers']){
         var struct = queenObj['energyStructuers'][structureName];
         if(struct['store']["energy"]<struct['energyCapacity']){
@@ -149,6 +162,11 @@ function econScreepsFunction(queenName, queenObj){
             thirstyStructuers.push(obj);
         }
     }
+
+    // Next, we want to do one loop thorugh our bees to see which ones
+    // are already taking care of thos buildings.
+    // If there is a delivery being done, remove that bee's energy store
+    // from the Thirst no.  If thirst then becomes 0, remove it from the list.
 
     for (var bee in queenObj['bees']['hauler']){
         var beeName = queenObj['bees']['hauler'][bee];
@@ -167,13 +185,15 @@ function econScreepsFunction(queenName, queenObj){
         }
     }
 
-
+    // And this is the bee's actual logic:
 
     for (var bee in queenObj['bees']['hauler']){
         var beeName = queenObj['bees']['hauler'][bee];
         var bee = Game.creeps[beeName];
         var source = Game.getObjectById(bee.memory.source);
         if(bee.carry.energy == 0){
+            // If we don't have any energy, we want to reset and find
+            // dropped resources around a source.
             bee.memory.deliveryTargetID = '';
             var target = source.pos.findInRange(FIND_DROPPED_RESOURCES,1)[0];
             if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
@@ -181,12 +201,13 @@ function econScreepsFunction(queenName, queenObj){
             }
         }
         else {
+            // Otherwise we have some energy and should do something with it.
             if (thirstyStructuers.length > 0){
+                // If we're here, there are buildings with Thirst...
                 if(bee.memory.deliveryTargetID){
-                    console.log("Bee "+bee+" wants to bo to "+ bee.memory.deliveryTargetID);
+                    // And if we have a delivery target, we should go to it to deliver.
                     var deliveryID = bee.memory.deliveryTargetID;
                     var deliveryObj = Game.getObjectById(deliveryID);
-                    console.log(bee.transfer(deliveryObj, RESOURCE_ENERGY));
                     if(bee.transfer(deliveryObj, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                         bee.moveTo(deliveryObj, {visualizePathStyle: {stroke: '#ffffff'}});
                     }
@@ -195,11 +216,11 @@ function econScreepsFunction(queenName, queenObj){
                     }
                 }
                 else{
+                    // If we don't have a delivery target, grab the first on the list
+                    // and reduce or remove it from the list.
                     bee.memory.deliveryTargetID = thirstyStructuers[0]['id'];
                     if (thirstyStructuers[0]['thirst'] < bee['carry']['energy']){
-                        console.log(thirstyStructuers);
                         thirstyStructuers.splice(0,1);
-                        console.log(thirstyStructuers)
                     }
                     else{
                         thirstyStructuers[0]['thirst'] = thirstyStructuers[0]['thirst'] - bee['carry']['energy'];
@@ -207,12 +228,16 @@ function econScreepsFunction(queenName, queenObj){
                 }
             }
             else{
+                // This will run if we have energy but there's no buildings that need it.
+                // Function to go to the room's controller and upgrade it.
                 upgradeController(bee);
             }    
         }
     }
 }
 
+
+// Very simple function to go to and mine a source.
 function mineSource(bee, source){
     if(bee.harvest(source) == ERR_NOT_IN_RANGE) {
         bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
@@ -220,13 +245,14 @@ function mineSource(bee, source){
     else(bee.harvest(source));
 }
 
+// Function to go to and upgrade a controller.
 function upgradeController(bee){
     bee.signController(bee.room.controller, "Rebuilding scripts from scratch after an absence, so expect weird behavior as I test. I am harmless.");
     bee.moveTo(bee.room.controller, {visualizePathStyle: {stroke: '#ffffff'}});
-    
-    console.log(bee.upgradeController(bee.room.controller));
+    bee.upgradeController(bee.room.controller);
 }
 
+// A simple check, based on our max energy storage, on how advanced we want our creeps to be.
 function calculateLevel(energyMax){
     if (energyMax < 550){
         return 1;
@@ -242,9 +268,10 @@ function calculateLevel(energyMax){
     }
 };
 
+// Logic to get the starter bee started
+// This is pretty old school shit and very rough around the edges.
+// It should probably be retired but it's used like once.
 function starterMining(beeName, sourceName){
-    // This is pretty old school shit.
-    // And should probably be retired.
     var source = Game.getObjectById(sourceName);
     var bee = Game.creeps[beeName];
     if(bee.carry.energy < bee.carryCapacity) {
@@ -265,22 +292,6 @@ function starterMining(beeName, sourceName){
             }
         }
     }
-}
-
-function harvesterMining(beeName, sourceName, delivery){
-    var source = '';
-    var bee = Game.creeps[beeName];
-    if (sourceName){
-        console.log(sourceName)
-        var source = Game.getObjectById(sourceName);
-    }
-    else{
-        source = Game.getObjectById(bee.memory.source);
-    }
-    if(bee.harvest(source) == ERR_NOT_IN_RANGE) {
-            bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
-        }
-    else(bee.harvest(source));
 }
 
 function hauling(beeName, sourceName){
