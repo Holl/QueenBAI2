@@ -10,11 +10,7 @@ module.exports = function(queenName, empressOrders, queenObj){
     //"OTHERWISE" we should just expand economy:
     normalEconomySpawning(queenName, queenObj);
 
-    econScreepsFunction(queenName, queenObj);
-
-    var terrain = Game.rooms['E5N22'].getTerrain();
-
-    // db(terrain.getRawBuffer());    
+    econScreepsFunction(queenName, queenObj);  
 }
 
 function normalEconomySpawning(queenName, queenObj){
@@ -96,12 +92,24 @@ function normalEconomySpawning(queenName, queenObj){
         if (unharvestedSourceArray.includes(localSources[source])){
             // Create a harvester bee and set it loose on the source.
             // Return cuz we're done.
-            creepCreator(queenObj['inactiveSpawns'][0], 
-                'harvester', 
-                beeLevel,
-                queenName,
-                {'source':localSources[source]}
-            );
+            var container = findContainer(localSources[source]);
+            if (container){
+                creepCreator(queenObj['inactiveSpawns'][0], 
+                                'harvester', 
+                                beeLevel,
+                                queenName,
+                                {'source':localSources[source],
+                                'pickupID': container.id}
+                            );
+            }
+            else{
+                 creepCreator(queenObj['inactiveSpawns'][0], 
+                                'harvester', 
+                                beeLevel,
+                                queenName,
+                                {'source':localSources[source]}
+                            );
+            }
             return;
         }
         else if (!hauledSourceObject[localSources[source]] || hauledSourceObject[localSources[source]].length < noHaulers){
@@ -129,7 +137,7 @@ function econScreepsFunction(queenName, queenObj){
     for(var bee in queenObj['bees']['starter']){
         var beeName = queenObj['bees']['starter'][bee];
         var source = queenObj['localSources'][0];
-        starterMining(beeName, source);
+        starterMining(beeName, queenObj);
     }
 
     // HARVESTER BEES
@@ -146,8 +154,8 @@ function econScreepsFunction(queenName, queenObj){
     // HAULER BEES
     // The important work force for our hive.  Now we have some actual logic.
     // But first we need to prepare.
-    var thirstyStructuers = [];
 
+    var thirstyStructuers = [];
 
     // First, we want to prepare an array of objects-
     // these are all the structures that require energy in some way.
@@ -195,54 +203,91 @@ function econScreepsFunction(queenName, queenObj){
             // If we don't have any energy, we want to reset and find
             // dropped resources around a source.
             bee.memory.deliveryTargetID = '';
-            var target = source.pos.findInRange(FIND_DROPPED_RESOURCES,1)[0];
-            if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
-                bee.moveTo(target.pos, {visualizePathStyle: {stroke: '#ffaa00'}});
-            }
-        }
-        else {
-            // Otherwise we have some energy and should do something with it.
-            if (thirstyStructuers.length > 0){
-                // If we're here, there are buildings with Thirst...
-                if(bee.memory.deliveryTargetID){
-                    // And if we have a delivery target, we should go to it to deliver.
-                    var deliveryID = bee.memory.deliveryTargetID;
-                    var deliveryObj = Game.getObjectById(deliveryID);
-                    if(bee.transfer(deliveryObj, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                        bee.moveTo(deliveryObj, {visualizePathStyle: {stroke: '#ffffff'}});
-                    }
-                    if(bee.transfer(deliveryObj, RESOURCE_ENERGY) == ERR_FULL){
-                        bee.memory.deliveryTargetID = '';
-                    }
-                }
-                else{
-                    // If we don't have a delivery target, grab the first on the list
-                    // and reduce or remove it from the list.
-                    bee.memory.deliveryTargetID = thirstyStructuers[0]['id'];
-                    if (thirstyStructuers[0]['thirst'] < bee['carry']['energy']){
-                        thirstyStructuers.splice(0,1);
-                    }
-                    else{
-                        thirstyStructuers[0]['thirst'] = thirstyStructuers[0]['thirst'] - bee['carry']['energy'];
-                    }
+            if (bee.memory.pickupID){
+                var pickup = Game.getObjectById(bee.memory.pickupID);
+                if (bee.withdraw(pickup, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
+                    bee.moveTo(target.pos, {visualizePathStyle: {stroke: 'blue'}})
                 }
             }
             else{
-                // This will run if we have energy but there's no buildings that need it.
-                // Function to go to the room's controller and upgrade it.
+                var target = source.pos.findInRange(FIND_DROPPED_RESOURCES,1)[0];
+                if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
+                    bee.moveTo(target.pos, {visualizePathStyle: {stroke: '#ffaa00'}});
+                }
+                else if (!target){
+                    bee.memory.pickupID = findContainer(source.id);
+                }
+            }
+        }
+        else {
+            // Otherwise we have some energy and should do something with
+            // If we're here, there are buildings with Thirst...
+            if(bee.memory.deliveryTargetID){
+                // And if we have a delivery target, we should go to it to deliver.
+                var deliveryID = bee.memory.deliveryTargetID;
+                var deliveryObj = Game.getObjectById(deliveryID);
+                if(bee.transfer(deliveryObj, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                    bee.moveTo(deliveryObj, {visualizePathStyle: {stroke: '#ffffff'}});
+                }
+                if(bee.transfer(deliveryObj, RESOURCE_ENERGY) == ERR_FULL){
+                    bee.memory.deliveryTargetID = '';
+                }
+            }
+            else if (thirstyStructuers.length>0){
+                // If we don't have a delivery target, grab the first on the list
+                // and reduce or remove it from the list.
+                bee.memory.deliveryTargetID = thirstyStructuers[0]['id'];
+
+                if (thirstyStructuers[0]['thirst'] < bee['carry']['energy']){
+                    thirstyStructuers.splice(0,1);
+                }
+                else{
+                    thirstyStructuers[0]['thirst'] = thirstyStructuers[0]['thirst'] - bee['carry']['energy'];
+                }
+            }
+            else if (queenObj['constructionSites']){
+                var site = queenObj['constructionSites'][0];
+                if(bee.build(site) == ERR_NOT_IN_RANGE){
+                    bee.moveTo(site, {visualizePathStyle: {stroke: 'white'}});
+                }
+            }
+            else{
                 upgradeController(bee);
-            }    
+            } 
         }
     }
 }
 
+function findContainer(source){
+    var sourcePos = Game.getObjectById(source).pos;
+    var container = sourcePos.findInRange(FIND_MY_CONSTRUCTION_SITES,1);
+    if (!container){
+        container = sourcePos.findInRange(FIND_MY_STRUCTURES,1);
+    }
+    return container.id;
+}
 
 // Very simple function to go to and mine a source.
 function mineSource(bee, source){
-    if(bee.harvest(source) == ERR_NOT_IN_RANGE) {
-        bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
+    if(bee.harvest(source) == ERR_NOT_IN_RANGE || bee.harvest(source) == ERR_BUSY) {
+        if (bee.memory.pickupID){
+            var container = Game.getObjectById(bee.memory.pickupID);
+            bee.moveTo(container, {visualizePathStyle: {stroke: '#ffaa00'}})
+
+        }
+        else{
+            bee.memory.containerID = source.pos.findInRange(FIND_CONSTRUCTION_SITES,1).id;
+            bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
+        }
+        
     }
-    else(bee.harvest(source));
+    else{
+        bee.harvest(source);
+        if(!bee.memory.container){
+            bee.room.createConstructionSite(bee.pos.x, bee.pos.y, STRUCTURE_CONTAINER);
+            bee.memory.container = 1;
+        }
+    }
 }
 
 // Function to go to and upgrade a controller.
@@ -271,8 +316,8 @@ function calculateLevel(energyMax){
 // Logic to get the starter bee started
 // This is pretty old school shit and very rough around the edges.
 // It should probably be retired but it's used like once.
-function starterMining(beeName, sourceName){
-    var source = Game.getObjectById(sourceName);
+function starterMining(beeName, queenObj){
+    var source = Game.getObjectById(queenObj['localSources'][0]);
     var bee = Game.creeps[beeName];
     if(bee.carry.energy < bee.carryCapacity) {
         if(bee.harvest(source) == ERR_NOT_IN_RANGE) {
@@ -291,39 +336,6 @@ function starterMining(beeName, sourceName){
                 bee.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
             }
         }
-    }
-}
-
-function hauling(beeName, sourceName){
-    var source = '';
-    var bee = Game.creeps[beeName];
-    if (sourceName){
-        source = Game.getObjectById(sourceName);
-    }
-    else{
-        source = Game.getObjectById(bee.memory.source);
-    }
-    if(bee.carry.energy == 0){
-        var target = source.pos.findInRange(
-            FIND_DROPPED_RESOURCES,
-            1
-        )[0];
-        if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
-            bee.moveTo(target.pos, {visualizePathStyle: {stroke: '#ffaa00'}});
-        }
-    }
-    else {
-        var targets = bee.room.find(FIND_STRUCTURES, {
-            filter: (structure) => {
-                return (structure.structureType == STRUCTURE_SPAWN)
-            }
-        });
-        if(targets.length > 0) {
-            if(bee.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                bee.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
-            }
-        }
-            
     }
 }
 

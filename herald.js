@@ -53,6 +53,7 @@ module.exports = function(){
                             structure.structureType == STRUCTURE_EXTENSION);
                     }
                 });
+            var constructionSites = Game.spawns[spawn].room.find(FIND_CONSTRUCTION_SITES);
             var spawnNameArrray = [];
             var inactiveSpawnNameArray = [];
             for (var spawnObj in spawnObjArray){
@@ -70,6 +71,7 @@ module.exports = function(){
                 "spawns": spawnNameArrray,
                 "inactiveSpawns": inactiveSpawnNameArray,
                 "energyStructuers": energyStructuers,
+                "constructionSites": constructionSites,
                 "bees":{}
             };
 		}
