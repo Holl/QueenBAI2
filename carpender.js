@@ -14,7 +14,32 @@ function levelUpConstruction(queenName, queenObject){
 			case 1:
 				console.log("This shouldn't ever happen.");
 			case 2:
-				console.log("We should ")
+				var thisRoom = Game.rooms[queenName];
+				var spawnPos =  thisRoom.find(FIND_MY_SPAWNS)[0].pos;
+				var spawnX = spawnPos.x;
+				var spawnY = spawnPos.y;
+
+				// N Spawns:
+				thisRoom.createConstructionSite(spawnPos.x,spawnPos.y-2,STRUCTURE_EXTENSION);
+				thisRoom.createConstructionSite(spawnPos.x,spawnPos.y-3,STRUCTURE_EXTENSION);
+				thisRoom.createConstructionSite(spawnPos.x+1,spawnPos.y-3,STRUCTURE_EXTENSION);
+				thisRoom.createConstructionSite(spawnPos.x-1,spawnPos.y-3,STRUCTURE_EXTENSION);
+				thisRoom.createConstructionSite(spawnPos.x,spawnPos.y-4,STRUCTURE_EXTENSION);
+
+				// Road around the spawn:
+				thisRoom.createConstructionSite(spawnPos.x,spawnPos.y-1,STRUCTURE_ROAD);
+				thisRoom.createConstructionSite(spawnPos.x,spawnPos.y+1,STRUCTURE_ROAD);
+				thisRoom.createConstructionSite(spawnPos.x-1,spawnPos.y,STRUCTURE_ROAD);
+				thisRoom.createConstructionSite(spawnPos.x+1,spawnPos.y,STRUCTURE_ROAD);
+
+				// Road around the extensions north:
+				thisRoom.createConstructionSite(spawnPos.x-1,spawnPos.y-2,STRUCTURE_ROAD);
+				thisRoom.createConstructionSite(spawnPos.x+1,spawnPos.y-2,STRUCTURE_ROAD);
+				thisRoom.createConstructionSite(spawnPos.x+2,spawnPos.y-3,STRUCTURE_ROAD);
+				thisRoom.createConstructionSite(spawnPos.x-2,spawnPos.y-3,STRUCTURE_ROAD);
+				thisRoom.createConstructionSite(spawnPos.x+1,spawnPos.y-4,STRUCTURE_ROAD);
+				thisRoom.createConstructionSite(spawnPos.x-1,spawnPos.y-4,STRUCTURE_ROAD);
+				thisRoom.createConstructionSite(spawnPos.x,spawnPos.y-5,STRUCTURE_ROAD);
 		}
 	}
 }
