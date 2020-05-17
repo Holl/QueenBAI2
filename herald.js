@@ -62,6 +62,19 @@ module.exports = function(){
                     inactiveSpawnNameArray.push(spawnObjArray[spawnObj].name);
                 }
             };
+            var level = Game.spawns[spawn].room.controller.level;
+            var levelUpBool = 0;
+            if (level == 1){
+                Memory[spawn] = {};
+                Memory[spawn]['level'] = 1;
+            }
+            else{
+                if (Memory[spawn]['level'] != level){
+                    console.log("Level up!");
+                    Memory[spawn]['level'] = level;
+                    levelUpBool = 1;
+                }
+            }
 
             // And add it to the object:
 			queenObject[name] = {
@@ -72,7 +85,9 @@ module.exports = function(){
                 "inactiveSpawns": inactiveSpawnNameArray,
                 "energyStructuers": energyStructuers,
                 "constructionSites": constructionSites,
-                "bees":{}
+                "bees":{},
+                "level": level,
+                "levelUpBool": levelUpBool
             };
 		}
 	};

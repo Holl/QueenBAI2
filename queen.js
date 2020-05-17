@@ -92,14 +92,16 @@ function normalEconomySpawning(queenName, queenObj){
         if (unharvestedSourceArray.includes(localSources[source])){
             // Create a harvester bee and set it loose on the source.
             // Return cuz we're done.
-            var container = findContainer(localSources[source]);
+            var container = findContainerID(localSources[source]);
             if (container){
                 creepCreator(queenObj['inactiveSpawns'][0], 
                                 'harvester', 
                                 beeLevel,
                                 queenName,
                                 {'source':localSources[source],
-                                'pickupID': container.id}
+                                'pickupID': container.id,
+                                'container': 1
+                                }
                             );
             }
             else{
@@ -205,8 +207,28 @@ function econScreepsFunction(queenName, queenObj){
             bee.memory.deliveryTargetID = '';
             if (bee.memory.pickupID){
                 var pickup = Game.getObjectById(bee.memory.pickupID);
-                if (bee.withdraw(pickup, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
-                    bee.moveTo(target.pos, {visualizePathStyle: {stroke: 'blue'}})
+                if (!pickup){
+                    bee.memory.pickupID = findContainerID(source.id);
+                    pickup = Game.getObjectById(bee.memory.pickupID);
+                    console.log("Pickup is null");
+                }
+                else{
+                    console.log(bee.name + " donesn't know where to go.")
+                }
+                console.log(Game.getObjectById(bee.memory.pickupID));
+                if (pickup.progressTotal){
+                    var target = source.pos.findInRange(FIND_DROPPED_RESOURCES,1)[0];
+                    if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
+                        bee.moveTo(target.pos, {visualizePathStyle: {stroke: '#ffaa00'}});
+                    }
+                }
+                else{
+                    if (bee.withdraw(pickup, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
+                        bee.moveTo(pickup.pos, {visualizePathStyle: {stroke: 'blue'}})
+                    }
+                    else if (bee.withdraw(pickup, RESOURCE_ENERGY) == ERR_INVALID_TARGET){
+                        bee.memory.pickupID = findContainerID(source.id);
+                    }
                 }
             }
             else{
@@ -215,7 +237,7 @@ function econScreepsFunction(queenName, queenObj){
                     bee.moveTo(target.pos, {visualizePathStyle: {stroke: '#ffaa00'}});
                 }
                 else if (!target){
-                    bee.memory.pickupID = findContainer(source.id);
+                    bee.memory.pickupID = findContainerID(source.id); 
                 }
             }
         }
@@ -234,6 +256,7 @@ function econScreepsFunction(queenName, queenObj){
                 }
             }
             else if (thirstyStructuers.length>0){
+
                 // If we don't have a delivery target, grab the first on the list
                 // and reduce or remove it from the list.
                 bee.memory.deliveryTargetID = thirstyStructuers[0]['id'];
@@ -245,7 +268,7 @@ function econScreepsFunction(queenName, queenObj){
                     thirstyStructuers[0]['thirst'] = thirstyStructuers[0]['thirst'] - bee['carry']['energy'];
                 }
             }
-            else if (queenObj['constructionSites']){
+            else if (queenObj['constructionSites'].length > 0){
                 var site = queenObj['constructionSites'][0];
                 if(bee.build(site) == ERR_NOT_IN_RANGE){
                     bee.moveTo(site, {visualizePathStyle: {stroke: 'white'}});
@@ -258,13 +281,21 @@ function econScreepsFunction(queenName, queenObj){
     }
 }
 
-function findContainer(source){
-    var sourcePos = Game.getObjectById(source).pos;
-    var container = sourcePos.findInRange(FIND_MY_CONSTRUCTION_SITES,1);
-    if (!container){
-        container = sourcePos.findInRange(FIND_MY_STRUCTURES,1);
+function findContainerID(sourceID){
+    // BUG IS HERE
+    // This isn't actually finding anything.
+
+    var sourcePos = Game.getObjectById(sourceID).pos
+    var container = sourcePos.findInRange(FIND_CONSTRUCTION_SITES,1);
+    if (Object.keys(container).length == 0){
+        container = sourcePos.findInRange(FIND_STRUCTURES,1);
     }
-    return container.id;
+    if (Object.keys(container).length == 0){
+        return false;
+    }
+    else{
+        return container[0].id;
+    }
 }
 
 // Very simple function to go to and mine a source.
@@ -272,11 +303,10 @@ function mineSource(bee, source){
     if(bee.harvest(source) == ERR_NOT_IN_RANGE || bee.harvest(source) == ERR_BUSY) {
         if (bee.memory.pickupID){
             var container = Game.getObjectById(bee.memory.pickupID);
-            bee.moveTo(container, {visualizePathStyle: {stroke: '#ffaa00'}})
-
+            bee.moveTo(container, {visualizePathStyle: {stroke: '#ffaa00'}});
         }
         else{
-            bee.memory.containerID = source.pos.findInRange(FIND_CONSTRUCTION_SITES,1).id;
+            bee.memory.pickupID = findContainerID(source.id);
             bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
         }
         
