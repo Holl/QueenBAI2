@@ -6,5 +6,4 @@ From this the 1st iteration was made, QueenBAI, with the concept that every spaw
 
 QueenBAI2 was built around the concept of an Empress above all queens.
 
-!(/readme/gram)
-Format: ![Alt Text](url)
+![Graph of this](readme/gram.png)
