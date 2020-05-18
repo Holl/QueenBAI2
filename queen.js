@@ -1,5 +1,5 @@
 const verboseLogging = 0;
-const noHaulers = 2;
+const noHaulers = 3;
 
 module.exports = function(queenName, empressOrders, queenObj){
 
@@ -215,7 +215,6 @@ function econScreepsFunction(queenName, queenObj){
                 else{
                     console.log(bee.name + " donesn't know where to go.")
                 }
-                console.log(Game.getObjectById(bee.memory.pickupID));
                 if (pickup.progressTotal){
                     var target = source.pos.findInRange(FIND_DROPPED_RESOURCES,1)[0];
                     if(bee.pickup(target) == ERR_NOT_IN_RANGE) {

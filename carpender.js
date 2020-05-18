@@ -1,15 +1,20 @@
 module.exports = function(queenName, queenObject){
-	// var roomTerrainObject = exampleJSONRoom;
-	// var roomName = 'E5N22'
-	// var roomObj = Game.rooms[roomName];
+
 	levelUpConstruction(queenName, queenObject);
-	// var room = convertToArray(roomTerrainObject, roomObj);
- //    buildRoomMap(room);
+
+	if (false){
+		var roomTerrainObject = exampleJSONRoom;
+		var roomName = 'E5N22'
+		var roomObj = Game.rooms[roomName];
+		var room = convertToArray(roomTerrainObject, roomObj);
+		buildRoomMap(room);		
+	}
 }
 
+// This is the functionality that adds contruction projects
+// once we level up.
 function levelUpConstruction(queenName, queenObject){
 	if (queenObject['levelUpBool']){
-		console.log("Confirming level up to " + queenObject['level'] + ".");
 		switch (queenObject['level']){
 			case 1:
 				console.log("This shouldn't ever happen.");
@@ -44,9 +49,9 @@ function levelUpConstruction(queenName, queenObject){
 	}
 }
 
+// Converting the insane object into something more manageable,
+// an array of arrays.  50 points in each of the 50 arrays.
 function convertToArray(roomTerrainObject, roomObj){
-	// Converting the insane object into something more manageable,
-	// an array of arrays.  50 points in each of the 50 arrays.
 	var finalArray = [];
 	var rowArray = [];
 	var count = 0;
@@ -86,6 +91,7 @@ function convertToArray(roomTerrainObject, roomObj){
 
 }
 
+// Put together a printable map to the console log.
 function buildRoomMap(roomArray){
  	var count = 0;
  	var finalString = '        ';
@@ -114,8 +120,4 @@ function buildRoomMap(roomArray){
     };
 
     console.log(finalString);
-}
-
-function checkIfConstructionNeeded(){
-	
 }
