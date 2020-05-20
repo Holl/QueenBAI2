@@ -76,6 +76,14 @@ module.exports = function(){
                 }
             }
 
+            var hostileCreeps = Game.spawns[spawn].room.find(FIND_HOSTILE_CREEPS);
+            var hostilePower = 0;
+            if (hostileCreeps){
+                for (var i=0; i< hostileCreeps.length; i++){
+                    hostilePower += getUnitPower(hostileCreeps[i]);
+                }
+            }
+
             // And add it to the object:
 			queenObject[name] = {
                 "energyNow": Game.spawns[spawn].room.energyAvailable,
@@ -87,7 +95,8 @@ module.exports = function(){
                 "constructionSites": constructionSites,
                 "bees":{},
                 "level": level,
-                "levelUpBool": levelUpBool
+                "levelUpBool": levelUpBool,
+                "hostilePower": hostilePower
             };
 		}
 	};
@@ -196,6 +205,7 @@ function getUnitPower(creep){
     unitPower += creep.getActiveBodyparts(ATTACK) * 80;
     unitPower += creep.getActiveBodyparts(RANGED_ATTACK) * 150;
     unitPower += creep.getActiveBodyparts(TOUGH) * 10;
+    unitPower += creep.getActiveBodyparts(MOVE) * 1;
     return unitPower
 }
 

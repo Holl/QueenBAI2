@@ -22,7 +22,7 @@ var runCaptain = require('captain');
 var runCarpender = require('carpender');
 
 module.exports.loop = function () {
-    // console.log("~~~~~~~~~~"+ Game.time+"~~~~~~~~~~");
+    console.log("~~~~~~~~~~"+ Game.time+"~~~~~~~~~~");
     
     var heraldReport = runHerald();
 
@@ -34,7 +34,7 @@ module.exports.loop = function () {
         runCarpender(queenName, heraldReport['queenObject'][queenName]);
     }
 
-    // console.log("Currently " + Game.cpu.bucket + 
-    //     " in the bucket, with " + Game.cpu.tickLimit + 
-    //     " as the current tick limit.");
+    console.log("Currently " + Game.cpu.bucket + 
+        " in the bucket, with " + Game.cpu.tickLimit + 
+        " as the current tick limit.");
 }

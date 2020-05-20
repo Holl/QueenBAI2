@@ -1,6 +1,5 @@
 const verboseLogging = 0;
-const noHaulers = 3;
-
+const noHaulers = 4;
 module.exports = function(queenName, empressOrders, queenObj){
 
     // TODO: Logic to objey the empress
@@ -8,9 +7,15 @@ module.exports = function(queenName, empressOrders, queenObj){
     // TODO: Logic to defend the Queen's terriotiry
 
     //"OTHERWISE" we should just expand economy:
-    normalEconomySpawning(queenName, queenObj);
 
-    econScreepsFunction(queenName, queenObj);  
+    maintenanceSpawning(queenName, queenObj); 
+    maintenanceBeesFunction(queenName, queenObj); 
+    normalEconomySpawning(queenName, queenObj);
+    econBeesFunction(queenName, queenObj);  
+
+
+    defnseFunction(queenName, queenObj);
+    
 }
 
 function normalEconomySpawning(queenName, queenObj){
@@ -20,7 +25,6 @@ function normalEconomySpawning(queenName, queenObj){
         return;
     }
 
-    // 
     var beeLevel = calculateLevel(queenObj['energyMax']);
 
     if (_.isEmpty(queenObj['bees'])){
@@ -130,7 +134,7 @@ function normalEconomySpawning(queenName, queenObj){
     }
 };
 
-function econScreepsFunction(queenName, queenObj){
+function econBeesFunction(queenName, queenObj){
 
     // STARTER BEES
     // Fire off the simple logic for our starter bees.
@@ -163,7 +167,6 @@ function econScreepsFunction(queenName, queenObj){
     // these are all the structures that require energy in some way.
     // This is the concept of "Thirst"- a number value representing how much
     // energy the building needs.
-
     for (var structureName in queenObj['energyStructuers']){
         var struct = queenObj['energyStructuers'][structureName];
         if(struct['store']["energy"]<struct['energyCapacity']){
@@ -210,10 +213,9 @@ function econScreepsFunction(queenName, queenObj){
                 if (!pickup){
                     bee.memory.pickupID = findContainerID(source.id);
                     pickup = Game.getObjectById(bee.memory.pickupID);
-                    console.log("Pickup is null");
                 }
                 else{
-                    console.log(bee.name + " donesn't know where to go.")
+                    // console.log(bee.name + " donesn't know where to go.")
                 }
                 if (pickup.progressTotal){
                     var target = source.pos.findInRange(FIND_DROPPED_RESOURCES,1)[0];
@@ -280,14 +282,99 @@ function econScreepsFunction(queenName, queenObj){
     }
 }
 
+function maintenanceSpawning(queenName, queenObj){
+    if(queenObj['inactiveSpawns'].length == 0){
+        return;
+    }
+
+    var beeLevel = calculateLevel(queenObj['energyMax']);
+    var queenLevel = queenObj['level'];
+    var noWorkers = queenLevel - 1;
+
+    if (queenObj['bees']['worker'] < noWorkers || (!queenObj['bees']['worker'] && noWorkers > 0)){
+        creepCreator(queenObj['inactiveSpawns'][0], 
+                                'worker', 
+                                beeLevel,
+                                queenName
+                            );
+    }
+}
+
+function maintenanceBeesFunction(queenName, queenObj){
+    var repairArray = Game.rooms[queenName].find(FIND_STRUCTURES, {
+        filter: object => object.hits < object.hitsMax
+    });
+
+    repairArray.sort((a,b) => a.hits - b.hits);
+    
+    for (var bee in queenObj['bees']['worker']){
+        var beeName = queenObj['bees']['worker'][bee];
+        var ourBee = Game.creeps[beeName];
+        if(ourBee.carry.energy == 0){
+            ourBee.memory.repairTarget = '';
+            if (ourBee.memory.pickupID){
+                var container = Game.getObjectById(ourBee.memory.pickupID);
+                if (ourBee.withdraw(container, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
+                    ourBee.moveTo(container.pos, {visualizePathStyle: {stroke: 'blue'}})
+                }
+            }
+            else{
+                var containers = ourBee.room.find(FIND_STRUCTURES, 
+                    {filter: {structureType: STRUCTURE_CONTAINER }}
+                );
+                if (containers){
+                    var container = ourBee.pos.findClosestByRange(containers);
+                    ourBee.memory.pickupID = container.id;
+                    if (ourBee.withdraw(container, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
+                        ourBee.moveTo(container.pos, {visualizePathStyle: {stroke: 'blue'}})
+                    }
+                }
+            }
+        }
+        else{
+            if (ourBee.memory.repairTarget){
+                var storedTarget = Game.getObjectById(ourBee.memory.repairTarget);
+                if (storedTarget.hits < storedTarget.hitsMax){
+                    ourBee.moveTo(storedTarget);
+                    ourBee.repair(storedTarget);
+                }
+                else{
+                    ourBee.memory.repairTarget = repairArray[0].id;
+                    repairArray.splice(0,1);  
+                }
+            }
+            else {
+                if(repairArray.length > 0) {
+                    if(ourBee.repair(repairArray[0]) == ERR_NOT_IN_RANGE) {
+                        ourBee.moveTo(repairArray[0]);
+                    }
+                ourBee.memory.repairTarget = repairArray[0].id;
+                repairArray.splice(0,1);
+            }
+            }
+        }
+    }
+}
+
+function defnseFunction(queenName, queenObj){
+    if (queenObj['hostilePower'] > 0){
+        var hostiles = Game.rooms[queenName].find(FIND_HOSTILE_CREEPS);
+        if(hostiles.length > 0) {
+            var username = hostiles[0].owner.username;
+            Game.notify(`User ${username} spotted in room ${queenName}`);
+            var towers = Game.rooms[queenName].find(
+                FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_TOWER}});
+            towers.forEach(tower => tower.attack(hostiles[0]));
+        }
+    }
+}
+
 function findContainerID(sourceID){
-    // BUG IS HERE
-    // This isn't actually finding anything.
 
     var sourcePos = Game.getObjectById(sourceID).pos
-    var container = sourcePos.findInRange(FIND_CONSTRUCTION_SITES,1);
+    var container = sourcePos.findInRange(FIND_STRUCTURES,1);
     if (Object.keys(container).length == 0){
-        container = sourcePos.findInRange(FIND_STRUCTURES,1);
+        container = sourcePos.findInRange(FIND_CONSTRUCTION_SITES,1);
     }
     if (Object.keys(container).length == 0){
         return false;
@@ -321,9 +408,9 @@ function mineSource(bee, source){
 
 // Function to go to and upgrade a controller.
 function upgradeController(bee){
-    bee.signController(bee.room.controller, "Rebuilding scripts from scratch after an absence, so expect weird behavior as I test. I am harmless.");
-    bee.moveTo(bee.room.controller, {visualizePathStyle: {stroke: '#ffffff'}});
-    bee.upgradeController(bee.room.controller);
+    if(bee.upgradeController(bee.room.controller) == ERR_NOT_IN_RANGE) {
+        bee.moveTo(bee.room.controller, {visualizePathStyle: {stroke: '#ffffff'}});
+    }
 }
 
 // A simple check, based on our max energy storage, on how advanced we want our creeps to be.
@@ -426,20 +513,7 @@ function getBody_Scout(level){
     }
 }
 
-function getBody_Harvester(level){
-    switch (level){
-        case 1: return [MOVE, 
-                        WORK, WORK];
-        case 2: return [MOVE, 
-                        WORK, WORK, WORK, WORK];
-        case 3: return [MOVE, 
-                        WORK, WORK, WORK, WORK, WORK];
-        case 4: return [MOVE, MOVE, MOVE, MOVE, MOVE, 
-                        WORK, WORK, WORK, WORK, WORK];
-    }
-}
-
-function getBody_Builder(level){
+function getBody_Worker(level){
     switch (level){
         case 1: return [
                         CARRY, 
@@ -461,6 +535,20 @@ function getBody_Builder(level){
                         WORK, WORK, WORK, WORK, WORK,
                         MOVE, MOVE, MOVE, MOVE, MOVE, MOVE
                         ];
+    }
+}
+
+
+function getBody_Harvester(level){
+    switch (level){
+        case 1: return [MOVE, 
+                        WORK, WORK];
+        case 2: return [MOVE, 
+                        WORK, WORK, WORK, WORK];
+        case 3: return [MOVE, 
+                        WORK, WORK, WORK, WORK, WORK];
+        case 4: return [MOVE, MOVE, MOVE, MOVE, MOVE, 
+                        WORK, WORK, WORK, WORK, WORK];
     }
 }
 
