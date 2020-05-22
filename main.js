@@ -21,8 +21,12 @@ var runCaptain = require('captain');
 // The Carpender decides what should be built, when and where.
 var runCarpender = require('carpender');
 
+
+// Some debug tools:
+var db = require('debugTools');
+
 module.exports.loop = function () {
-    console.log("~~~~~~~~~~"+ Game.time+"~~~~~~~~~~");
+    db.vLog("~~~~~~~~~~"+ Game.time+"~~~~~~~~~~");
     
     var heraldReport = runHerald();
 
@@ -34,7 +38,7 @@ module.exports.loop = function () {
         runCarpender(queenName, heraldReport['queenObject'][queenName]);
     }
 
-    console.log("Currently " + Game.cpu.bucket + 
+    db.vLog("Currently " + Game.cpu.bucket + 
         " in the bucket, with " + Game.cpu.tickLimit + 
         " as the current tick limit.");
 }

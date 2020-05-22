@@ -1,5 +1,9 @@
 const verboseLogging = 0;
 const noHaulers = 4;
+
+var creepCreator = require('beeSpawner');
+var db = require('debugTools');
+
 module.exports = function(queenName, empressOrders, queenObj){
 
     // TODO: Logic to objey the empress
@@ -209,8 +213,10 @@ function econBeesFunction(queenName, queenObj){
             // dropped resources around a source.
             bee.memory.deliveryTargetID = '';
             if (bee.memory.pickupID){
+                // If we stored where we need to pick up, go there.
                 var pickup = Game.getObjectById(bee.memory.pickupID);
                 if (!pickup){
+                    // Handler if this doesn't exist.
                     bee.memory.pickupID = findContainerID(source.id);
                     pickup = Game.getObjectById(bee.memory.pickupID);
                 }
@@ -305,55 +311,57 @@ function maintenanceBeesFunction(queenName, queenObj){
         filter: object => object.hits < object.hitsMax
     });
 
-    repairArray.sort((a,b) => a.hits - b.hits);
-    
-    for (var bee in queenObj['bees']['worker']){
-        var beeName = queenObj['bees']['worker'][bee];
-        var ourBee = Game.creeps[beeName];
-        if(ourBee.carry.energy == 0){
-            ourBee.memory.repairTarget = '';
-            if (ourBee.memory.pickupID){
-                var container = Game.getObjectById(ourBee.memory.pickupID);
-                if (ourBee.withdraw(container, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
-                    ourBee.moveTo(container.pos, {visualizePathStyle: {stroke: 'blue'}})
-                }
-            }
-            else{
-                var containers = ourBee.room.find(FIND_STRUCTURES, 
-                    {filter: {structureType: STRUCTURE_CONTAINER }}
-                );
-                if (containers){
-                    var container = ourBee.pos.findClosestByRange(containers);
-                    ourBee.memory.pickupID = container.id;
+    if (repairArray.length > 0){
+        repairArray.sort((a,b) => a.hits - b.hits);
+        for (var bee in queenObj['bees']['worker']){
+            var beeName = queenObj['bees']['worker'][bee];
+            var ourBee = Game.creeps[beeName];
+            if(ourBee.carry.energy == 0){
+                ourBee.memory.repairTarget = '';
+                if (ourBee.memory.pickupID){
+                    var container = Game.getObjectById(ourBee.memory.pickupID);
                     if (ourBee.withdraw(container, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
                         ourBee.moveTo(container.pos, {visualizePathStyle: {stroke: 'blue'}})
                     }
                 }
-            }
-        }
-        else{
-            if (ourBee.memory.repairTarget){
-                var storedTarget = Game.getObjectById(ourBee.memory.repairTarget);
-                if (storedTarget.hits < storedTarget.hitsMax){
-                    ourBee.moveTo(storedTarget);
-                    ourBee.repair(storedTarget);
-                }
                 else{
-                    ourBee.memory.repairTarget = repairArray[0].id;
-                    repairArray.splice(0,1);  
+                    var containers = ourBee.room.find(FIND_STRUCTURES, 
+                        {filter: {structureType: STRUCTURE_CONTAINER }}
+                    );
+                    if (containers){
+                        var container = ourBee.pos.findClosestByRange(containers);
+                        ourBee.memory.pickupID = container.id;
+                        if (ourBee.withdraw(container, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
+                            ourBee.moveTo(container.pos, {visualizePathStyle: {stroke: 'blue'}})
+                        }
+                    }
                 }
             }
-            else {
-                if(repairArray.length > 0) {
-                    if(ourBee.repair(repairArray[0]) == ERR_NOT_IN_RANGE) {
-                        ourBee.moveTo(repairArray[0]);
+            else{
+                if (ourBee.memory.repairTarget){
+                    var storedTarget = Game.getObjectById(ourBee.memory.repairTarget);
+                    if (storedTarget.hits < storedTarget.hitsMax){
+                        ourBee.moveTo(storedTarget);
+                        ourBee.repair(storedTarget);
                     }
-                ourBee.memory.repairTarget = repairArray[0].id;
-                repairArray.splice(0,1);
-            }
+                    else{
+                        ourBee.memory.repairTarget = repairArray[0].id;
+                        repairArray.splice(0,1);  
+                    }
+                }
+                else {
+                    if(repairArray.length > 0) {
+                        if(ourBee.repair(repairArray[0]) == ERR_NOT_IN_RANGE) {
+                            ourBee.moveTo(repairArray[0]);
+                        }
+                    ourBee.memory.repairTarget = repairArray[0].id;
+                    repairArray.splice(0,1);
+                }
+                }
             }
         }
     }
+    
 }
 
 function defnseFunction(queenName, queenObj){
@@ -453,159 +461,4 @@ function starterMining(beeName, queenObj){
             }
         }
     }
-}
-
-function creepCreator(spawnName, roleName, creepLevel, queenName, metaData){
-    var body = getBody(roleName, creepLevel);
-    var name = roleName + "_lvl" + creepLevel + "_" + Game.time.toString();
-    var finalMetaData = {
-        ...{'role': roleName, 'queen': queenName},
-        ...metaData
-    }
-    Game.spawns[spawnName].spawnCreep(body, name, { memory: finalMetaData});
-}
-
-function calculateCreepMaximums(localSource, spawnName){
-    var targetResources = Game.getObjectById(localSource).pos.findInRange(
-        FIND_DROPPED_RESOURCES,
-        1
-    );
-    var sumResources = 0;
-    for (var y=0; y< targetResources.length; y++){
-        sumResources += targetResources[y].energy;
-    }
-    var creepsMax = 0;
-    return Math.floor((sumResources/500)+1)
-}
-
-function checkTargetedCreepsAmount(scanData, targets, max, num, source){
-    if (scanData[targets][scanData[source][num]] < max || !(scanData[targets][scanData[source][num]])){
-        return true;
-    }
-    else {return false};
-}        
-
-
-function getBody(role, level){
-    switch (role){
-        case "starter": return getBody_Starter(level);
-        case "worker": return getBody_Worker(level);
-        case "harvester": return getBody_Harvester(level);
-        case "builder": return getBody_Builder(level);
-        case "defender": return getBody_Defender(level);
-        case "hauler": return getBody_Hauler(level);
-        case "scout": return getBody_Scout(level);
-        case "capture": return getBody_Capture(level);
-        case "swarm": return getBody_Swarm(level);
-    }
-}
-
-function getBody_Starter(level){
-    switch (level){
-        case 1: return [MOVE, 
-                        WORK, CARRY];
-    }
-}
-
-function getBody_Scout(level){
-    switch (level){
-        case 1: return [MOVE];
-    }
-}
-
-function getBody_Worker(level){
-    switch (level){
-        case 1: return [
-                        CARRY, 
-                        MOVE, 
-                        WORK
-                        ]
-        case 2: return [
-                        CARRY, CARRY, CARRY,
-                        WORK, WORK, 
-                        MOVE, MOVE, MOVE
-                        ];
-        case 3: return [
-                        CARRY, CARRY, CARRY, CARRY, CARRY,
-                        WORK, WORK, WORK, WORK,
-                        MOVE, MOVE, MOVE
-                        ];
-        case 4: return [
-                        CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
-                        WORK, WORK, WORK, WORK, WORK,
-                        MOVE, MOVE, MOVE, MOVE, MOVE, MOVE
-                        ];
-    }
-}
-
-
-function getBody_Harvester(level){
-    switch (level){
-        case 1: return [MOVE, 
-                        WORK, WORK];
-        case 2: return [MOVE, 
-                        WORK, WORK, WORK, WORK];
-        case 3: return [MOVE, 
-                        WORK, WORK, WORK, WORK, WORK];
-        case 4: return [MOVE, MOVE, MOVE, MOVE, MOVE, 
-                        WORK, WORK, WORK, WORK, WORK];
-    }
-}
-
-function getBody_Defender(level){
-    switch (level){
-        case 1: return [
-                        ATTACK, MOVE
-                        ];
-        case 2: return [
-                        RANGED_ATTACK, RANGED_ATTACK, 
-                        MOVE, MOVE
-                        ];
-        case 3: return [
-                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                        MOVE, MOVE, MOVE, MOVE
-                        ];
-        case 4: return [
-                        RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK, RANGED_ATTACK,
-                        MOVE, MOVE, MOVE, MOVE, MOVE
-                        ];
-    }
-}
-
-function getBody_Hauler(level){
-    switch (level){
-            case 1: return [
-                            CARRY, 
-                            MOVE, 
-                            WORK
-                            ]
-            case 2: return [
-                            CARRY, CARRY, CARRY,
-                            WORK, WORK, 
-                            MOVE, MOVE, MOVE
-                            ];
-            case 3: return [
-                            CARRY, CARRY, CARRY, CARRY, CARRY,
-                            WORK, WORK, WORK, WORK,
-                            MOVE, MOVE, MOVE
-                            ];
-            case 4: return [
-                            CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
-                            WORK, WORK, WORK, WORK, WORK,
-                            MOVE, MOVE, MOVE, MOVE, MOVE, MOVE
-                            ];
-        }
-}
-
-function getBody_Capture(level){
-    switch (level){
-        case 1: return [CLAIM, MOVE];
-        case 2: return [CLAIM, MOVE];
-        case 3: return [CLAIM, MOVE];
-        case 4: return [CLAIM, MOVE];
-    }
-}
-
-function db(obj){
-    console.log(JSON.stringify(obj));
 }

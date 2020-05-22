@@ -1,3 +1,5 @@
+var db = require('debugTools');
+
 module.exports = function(){
 
     // Hear ye, hear ye!
@@ -9,8 +11,10 @@ module.exports = function(){
     // Eventually I suspect this will be too specific, and global efforts across rooms will require 
     // an object reporting more globally.
 
+    db.vLog("The Herald is starting.");
+
     // We'll start with declaring these variables:
-	
+
 	var heraldObject = {};
 
     var queenObject = {};
@@ -23,10 +27,13 @@ module.exports = function(){
 
 	for(var spawn in Game.spawns){
 
+
         // This loop essentially sets up all our queens.  We're looking for all the rooms
         // which have spawns.
         
         var name = Game.spawns[spawn].room.name;
+
+        db.vLog("Starting Herald for spawn " + name + ".");
 
         // We're grabbing the ROOM name here as it makes the most sense for our Queen ID.
         // QueenBAI 1 used spawn name which runs into a lot of problems when we build more than 1 to a room.
@@ -98,6 +105,8 @@ module.exports = function(){
                 "levelUpBool": levelUpBool,
                 "hostilePower": hostilePower
             };
+            db.vLog("The following is the object for the Spawn:");
+            db.vLog(JSON.stringify(queenObject));
 		}
 	};
 

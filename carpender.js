@@ -14,6 +14,7 @@ module.exports = function(queenName, queenObject){
 // This is the functionality that adds contruction projects
 // once we level up.
 function levelUpConstruction(queenName, queenObject){
+
 	if (queenObject['levelUpBool']){
 		var thisRoom = Game.rooms[queenName];
 		var spawnPos =  thisRoom.find(FIND_MY_SPAWNS)[0].pos;
@@ -79,13 +80,13 @@ function roadsToRoam(room, spawnPos){
 	else{
 		startX = spawnX + 2;
 	}
-	buildRoad(room, startX, startY, sourcePos.x, sourcePos.y);
+	buildRoad(room, startX, startY, controllerPos.x, controllerPos.y);
 }
 
 function buildRoad(room, startX, startY, endX, endY){
 	var route = room.getPositionAt(startX,startY).findPathTo(endX,endY);
 	for (var point in route){
-		if (!point== route.length){
+		if (point !== route.length-1){
 			room.getPositionAt(route[point].x,route[point].y).createConstructionSite(STRUCTURE_ROAD);
 		}
 	}
