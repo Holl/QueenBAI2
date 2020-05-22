@@ -105,8 +105,6 @@ module.exports = function(){
                 "levelUpBool": levelUpBool,
                 "hostilePower": hostilePower
             };
-            db.vLog("The following is the object for the Spawn:");
-            db.vLog(JSON.stringify(queenObject));
 		}
 	};
 
@@ -114,6 +112,12 @@ module.exports = function(){
     // They will be part of their queen's object, eventually.
     // If they don't have a queen, they're a freeBee
     // which shouldn't happen yet.
+
+    for(var i in Memory.creeps) {
+        if(!Game.creeps[i]) {
+            delete Memory.creeps[i];
+        }
+    }
 
 	for (var creep in Game.creeps){
         var beesQueen = Game.creeps[creep].memory.queen;
