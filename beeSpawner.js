@@ -19,6 +19,7 @@ function getBody(role, level){
         case "scout": return getBody_Scout(level);
         case "captor": return getBody_Capture(level);
         case "swarm": return getBody_Swarm(level);
+        case "captorBuilder": return getBody_CaptorBuilder(level);
     }
 }
 
@@ -26,6 +27,16 @@ function getBody_Starter(level){
     switch (level){
         case 1: return [MOVE, 
                         WORK, CARRY];
+    }
+}
+
+function getBody_CaptorBuilder(level){
+    switch (level){
+        case 3: return [
+                        CARRY, CARRY, CARRY,
+                        WORK, WORK, WORK,
+                        MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE
+                        ];
     }
 }
 

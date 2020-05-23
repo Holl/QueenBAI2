@@ -19,6 +19,8 @@ module.exports = function(queenName, empressOrders, queenObj){
     captureSpawning(queenName, queenObj, empressOrders);
     captureFunciton(queenName, queenObj, empressOrders);
     defnseFunction(queenName, queenObj);
+
+
     
 }
 
@@ -29,12 +31,9 @@ function captureSpawning(queenName, queenObj, empressOrders){
     }
 
     var beeLevel = calculateLevel(queenObj['energyMax']);
-
-    if (empressOrders['order']=='capture'){
-        if(queenObj['bees']['captor'] || beeLevel < 3){
-            return;
-        }
-        else{
+    if (empressOrders && empressOrders['order']=='capture' && beeLevel > 2){
+        if(typeof queenObj['bees']['captor'] == 'undefined' && 
+            Game.rooms[empressOrders['room']].controller.my == false){
             console.log("We'd like to spawn a captor");
             creepCreator(queenObj['inactiveSpawns'][0], 
                                         'captor', 
@@ -42,16 +41,71 @@ function captureSpawning(queenName, queenObj, empressOrders){
                                         queenName,
                                         {'targetRoom':empressOrders['room']}
                                     );
+            return;
+        }
+        if (typeof queenObj['bees']['captorBuilder'] == 'undefined' ||
+            queenObj['bees']['captorBuilder'].length < 2){
+            console.log("We'd like to spawn a captor builder.");
+            creepCreator(queenObj['inactiveSpawns'][0], 
+                                        'captorBuilder', 
+                                        beeLevel,
+                                        queenName,
+                                        {'targetRoom':empressOrders['room']}
+                                    );
+            return;
         }
     }
 }
 
 function captureFunciton(queenName, queenObj, empressOrders){
     for(var bee in queenObj['bees']['captor']){
-        var beeName = queenObj['bees']['hauler'][bee];
+        var beeName = queenObj['bees']['captor'][bee];
         var bee = Game.creeps[beeName];
         if(bee.room.name != bee.memory.targetRoom){
-            bee.goTo(Game.rooms[bee.memory.targetRoom]);
+            bee.moveTo(new RoomPosition(25, 25, bee.memory.targetRoom));
+        }
+        else{
+            if(bee.room.controller) {
+                if(bee.claimController(bee.room.controller) == ERR_NOT_IN_RANGE) {
+                    bee.moveTo(bee.room.controller);
+                }
+            }
+        }
+    }
+    for(var bee in queenObj['bees']['captorBuilder']){
+        var beeName = queenObj['bees']['captorBuilder'][bee];
+        var bee = Game.creeps[beeName];
+        if(bee.room.name != bee.memory.targetRoom){
+            bee.moveTo(new RoomPosition(25, 25, bee.memory.targetRoom));
+        }
+        else{
+            var source = bee.pos.findClosestByRange(FIND_SOURCES);
+            if(bee.carry.energy < bee.carryCapacity) {
+                if(bee.harvest(source) == ERR_NOT_IN_RANGE) {
+                    bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
+                }
+                else(bee.harvest(source));
+            }
+            else{
+                var targets = bee.room.find(FIND_STRUCTURES, {
+                    filter: (structure) => {
+                        return (structure.structureType == STRUCTURE_SPAWN)
+                    }
+                });
+                if(targets.length > 0) {
+                    if(bee.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                        bee.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
+                    }
+                }
+                else{
+                    targets = bee.room.find(FIND_CONSTRUCTION_SITES);
+                    if(targets.length > 0) {
+                        if(bee.build(targets[0]) == ERR_NOT_IN_RANGE) {
+                            bee.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
+                        }
+                    }
+                }
+            }
         }
     }
 }
