@@ -34,7 +34,11 @@ module.exports.loop = function () {
 
     for (var queenName in heraldReport['queenObject']){
     	var queenObj = heraldReport['queenObject'][queenName];
-    	runQueen(queenName, empressOrders, queenObj);
+        var empressordersForQueen = null;
+        if (empressOrders[queenName]){
+            empressordersForQueen = empressOrders[queenName];
+        }
+    	runQueen(queenName, empressordersForQueen, queenObj);
         runCarpender(queenName, heraldReport['queenObject'][queenName]);
     }
 

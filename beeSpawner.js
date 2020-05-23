@@ -17,7 +17,7 @@ function getBody(role, level){
         case "defender": return getBody_Defender(level);
         case "hauler": return getBody_Hauler(level);
         case "scout": return getBody_Scout(level);
-        case "capture": return getBody_Capture(level);
+        case "captor": return getBody_Capture(level);
         case "swarm": return getBody_Swarm(level);
     }
 }
@@ -96,33 +96,31 @@ function getBody_Defender(level){
 
 function getBody_Hauler(level){
     switch (level){
-            case 1: return [
-                            CARRY, 
-                            MOVE, 
-                            WORK
-                            ]
-            case 2: return [
-                            CARRY, CARRY, CARRY,
-                            WORK, WORK, 
-                            MOVE, MOVE, MOVE
-                            ];
-            case 3: return [
-                            CARRY, CARRY, CARRY, CARRY, CARRY,
-                            WORK, WORK, WORK, WORK,
-                            MOVE, MOVE, MOVE
-                            ];
-            case 4: return [
-                            CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
-                            WORK, WORK, WORK, WORK, WORK,
-                            MOVE, MOVE, MOVE, MOVE, MOVE, MOVE
-                            ];
-        }
+        case 1: return [
+                        CARRY, 
+                        MOVE, 
+                        WORK
+                        ]
+        case 2: return [
+                        CARRY, CARRY, CARRY,
+                        WORK, WORK, 
+                        MOVE, MOVE, MOVE
+                        ];
+        case 3: return [
+                        CARRY, CARRY, CARRY, CARRY, CARRY,
+                        WORK, WORK, WORK, WORK,
+                        MOVE, MOVE, MOVE
+                        ];
+        case 4: return [
+                        CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
+                        WORK, WORK, WORK, WORK, WORK,
+                        MOVE, MOVE, MOVE, MOVE, MOVE, MOVE
+                        ];
+    }
 }
 
 function getBody_Capture(level){
     switch (level){
-        case 1: return [CLAIM, MOVE];
-        case 2: return [CLAIM, MOVE];
         case 3: return [CLAIM, MOVE];
         case 4: return [CLAIM, MOVE];
     }

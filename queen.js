@@ -13,13 +13,47 @@ module.exports = function(queenName, empressOrders, queenObj){
     //"OTHERWISE" we should just expand economy:
 
     maintenanceSpawning(queenName, queenObj); 
-    maintenanceBeesFunction(queenName, queenObj); 
+    maintenanceBeesFunction(queenName, queenObj);
     normalEconomySpawning(queenName, queenObj);
-    econBeesFunction(queenName, queenObj);  
-
-
+    econBeesFunction(queenName, queenObj);
+    captureSpawning(queenName, queenObj, empressOrders);
+    captureFunciton(queenName, queenObj, empressOrders);
     defnseFunction(queenName, queenObj);
     
+}
+
+function captureSpawning(queenName, queenObj, empressOrders){
+
+    if(queenObj['inactiveSpawns'].length == 0){
+        return;
+    }
+
+    var beeLevel = calculateLevel(queenObj['energyMax']);
+
+    if (empressOrders['order']=='capture'){
+        if(queenObj['bees']['captor'] || beeLevel < 3){
+            return;
+        }
+        else{
+            console.log("We'd like to spawn a captor");
+            creepCreator(queenObj['inactiveSpawns'][0], 
+                                        'captor', 
+                                        beeLevel,
+                                        queenName,
+                                        {'targetRoom':empressOrders['room']}
+                                    );
+        }
+    }
+}
+
+function captureFunciton(queenName, queenObj, empressOrders){
+    for(var bee in queenObj['bees']['captor']){
+        var beeName = queenObj['bees']['hauler'][bee];
+        var bee = Game.creeps[beeName];
+        if(bee.room.name != bee.memory.targetRoom){
+            bee.goTo(Game.rooms[bee.memory.targetRoom]);
+        }
+    }
 }
 
 function normalEconomySpawning(queenName, queenObj){

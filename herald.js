@@ -178,6 +178,8 @@ module.exports = function(){
 
     // Build and return this object so the empress and queens can take a look.
 
+    empireObject['gcl'] = Game.gcl;
+
     heraldObject = {empireObject, queenObject};
 
     return heraldObject;
