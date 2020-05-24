@@ -3,11 +3,10 @@ module.exports = function(queenName, queenObject){
 	levelUpConstruction(queenName, queenObject);
 
 	if (false){
-		var roomTerrainObject = exampleJSONRoom;
-		var roomName = 'E5N22'
+		var roomName = 'E35N21'
 		var roomObj = Game.rooms[roomName];
+		var roomTerrainObject = roomObj.Terrain;
 		var room = convertToArray(roomTerrainObject, roomObj);
-		buildRoomMap(room);
 	}
 }
 
@@ -95,6 +94,7 @@ function buildRoad(room, startX, startY, endX, endY){
 // Converting the insane object into something more manageable,
 // an array of arrays.  50 points in each of the 50 arrays.
 function convertToArray(roomTerrainObject, roomObj){
+	console.log(JSON.stringify(roomTerrainObject));
 	var finalArray = [];
 	var rowArray = [];
 	var count = 0;
@@ -115,6 +115,7 @@ function convertToArray(roomTerrainObject, roomObj){
 	var centerX = 0;
 	var centerY = 0;
 	for (var source in sources){
+		console.log(finalArray);
 		finalArray[sources[source].pos.y][sources[source].pos.x] = "S";
 		centerY+= sources[source].pos.y;
 		centerX+= sources[source].pos.x;

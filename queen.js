@@ -44,7 +44,8 @@ function captureSpawning(queenName, queenObj, empressOrders){
             return;
         }
         if (typeof queenObj['bees']['captorBuilder'] == 'undefined' ||
-            queenObj['bees']['captorBuilder'].length < 2){
+            queenObj['bees']['captorBuilder'].length < 4){
+
             console.log("We'd like to spawn a captor builder.");
             creepCreator(queenObj['inactiveSpawns'][0], 
                                         'captorBuilder', 
@@ -80,13 +81,21 @@ function captureFunciton(queenName, queenObj, empressOrders){
         }
         else{
             var source = bee.pos.findClosestByRange(FIND_SOURCES);
-            if(bee.carry.energy < bee.carryCapacity) {
+            var status = 'none'
+            if (bee.carry.energy == bee.carryCapacity){
+                bee.memory.status = 'full';
+            }
+            else if (bee.carry.energy == 0){
+                bee.memory.status = 'empty';
+            }
+
+            if(bee.memory.status == 'empty') {
                 if(bee.harvest(source) == ERR_NOT_IN_RANGE) {
                     bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
                 }
                 else(bee.harvest(source));
             }
-            else{
+            else if (bee.memory.status == 'full'){
                 var targets = bee.room.find(FIND_STRUCTURES, {
                     filter: (structure) => {
                         return (structure.structureType == STRUCTURE_SPAWN)
@@ -468,7 +477,8 @@ function defnseFunction(queenName, queenObj){
 function findContainerID(sourceID){
 
     var sourcePos = Game.getObjectById(sourceID).pos
-    var container = sourcePos.findInRange(FIND_STRUCTURES,1);
+    var container = sourcePos.findInRange(FIND_STRUCTURES,1,
+        {filter: {structureType: STRUCTURE_CONTAINER}});
     if (Object.keys(container).length == 0){
         container = sourcePos.findInRange(FIND_CONSTRUCTION_SITES,1);
     }
