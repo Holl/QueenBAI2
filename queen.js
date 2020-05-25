@@ -1,6 +1,7 @@
 const noHaulers = 4;
 const noShipper = 1;
 const noDrones = 2;
+const noUpgraders = 1;
 
 var creepCreator = require('beeSpawner');
 var db = require('debugTools');
@@ -89,6 +90,7 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
 
     var shipperArray = queenObj['bees']['shipper'];
     var droneArray = queenObj['bees']['drone'];
+    var upgraderArray = queenObj['bees']['upgrader'];
 
     var harvestedSourceArray=[];
     var hauledSourceObject={};
@@ -163,7 +165,6 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
             db.vLog("Spawning Harvester.");
             var container = findContainerID(localSources[source]);
             if (container){
-                
                 creepCreator(queenObj['inactiveSpawns'][0], 
                                 'harvester', 
                                 beeLevel,
@@ -202,6 +203,15 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
                 db.vLog("Spawning Drone.");
                 creepCreator(queenObj['inactiveSpawns'][0], 
                                     'drone', 
+                                    beeLevel,
+                                    queenName
+                                );
+                return;
+            }
+            else if (upgraderArray == undefined || upgraderArray.length < noUpgraders){
+                db.vLog("Spawning Upgrader.");
+                creepCreator(queenObj['inactiveSpawns'][0], 
+                                    'upgrader', 
                                     beeLevel,
                                     queenName
                                 );
@@ -432,22 +442,22 @@ function econBeesFunction(queenName, queenObj){
             }
         }
         else{
-            if(bee.memory.deliveryTargetID){
-                // And if we have a delivery target, we should go to it to deliver.
+            if (thirstyStructuers.length > 0 || bee.memory.deliveryTargetID){
+                if(!bee.memory.deliveryTargetID){
+                    // And if we have a delivery target, we should go to it to deliver.
+                    bee.memory.deliveryTargetID = thirstyStructuers[0]['id'];
+                    if (thirstyStructuers[0]['thirst'] < bee['carry']['energy']){
+                        thirstyStructuers.splice(0,1);
+                    }
+                    else{
+                        thirstyStructuers[0]['thirst'] = thirstyStructuers[0]['thirst'] - bee['carry']['energy'];
+                    }
+                }
                 var deliveryID = bee.memory.deliveryTargetID;
                 var deliveryObj = Game.getObjectById(deliveryID);
-            }
-            if (thirstyStructuers.length>0){
                 // If we don't have a delivery target, grab the first on the list
                 // and reduce or remove it from the list.
-                bee.memory.deliveryTargetID = thirstyStructuers[0]['id'];
-
-                if (thirstyStructuers[0]['thirst'] < bee['carry']['energy']){
-                    thirstyStructuers.splice(0,1);
-                }
-                else{
-                    thirstyStructuers[0]['thirst'] = thirstyStructuers[0]['thirst'] - bee['carry']['energy'];
-                }
+                bee.transfer(deliveryObj, RESOURCE_ENERGY);               
                 if(bee.transfer(deliveryObj, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                     bee.moveTo(deliveryObj);
                 }
@@ -456,6 +466,28 @@ function econBeesFunction(queenName, queenObj){
                 }
             }
         }
+    }
+    for (var bee in queenObj['bees']['upgrader']){
+        var beeName = queenObj['bees']['upgrader'][bee];
+        var bee = Game.creeps[beeName];
+        if(bee.carry.energy == 0){      
+            if (bee.memory.storage){
+                var storageID = bee.memory.storage;
+                var storage = Game.getObjectById(storageID);
+            }
+            else{
+                var storageObj = Game.rooms[queenName].find(
+                FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_STORAGE}});
+                var storage = storageObj[0];
+                bee.memory.storage = storageObj[0].id;
+            }
+            if(bee.withdraw(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                bee.moveTo(storage);
+            }
+        }
+        else{
+            upgradeController(bee);
+        } 
     }
 }
 
@@ -628,8 +660,10 @@ function starterMining(beeName, queenObj){
     else{
         var targets = bee.room.find(FIND_STRUCTURES, {
             filter: (structure) => {
-                return (structure.structureType == STRUCTURE_SPAWN ||
-                    structure.structureType == STRUCTURE_EXTENSION)
+                return ((structure.structureType == STRUCTURE_SPAWN ||
+                    structure.structureType == STRUCTURE_EXTENSION)&&
+                (structure.energy < structure.energyCapacity || 
+                    structure.store < structure.storeCapacity))
             }
         });
         if(targets.length > 0) {
