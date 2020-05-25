@@ -15,9 +15,10 @@ module.exports = function(queenName, empressOrders, queenObj){
     db.vLog("Currently "+queenObj["energyNow"]+" out of a possible "+queenObj["energyMax"]+ " energy.");
 
     if(queenObj['inactiveSpawns'].length > 0){
-        var beeLevel = calculateLevel(queenObj['energyMax']);
+        var beeLevel = calculateLevel(queenObj['energyMax'], queenName);
 
-        maintenanceSpawning(queenName, queenObj, beeLevel); 
+        db.vLog("Bee level is " + beeLevel);
+
         normalEconomySpawning(queenName, queenObj, beeLevel);
         captureSpawning(queenName, queenObj, empressOrders, beeLevel);
     }
@@ -232,6 +233,7 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
             return;
         }
     }
+    maintenanceSpawning(queenName, queenObj, beeLevel);
 };
 
 function econBeesFunction(queenName, queenObj){
@@ -410,9 +412,16 @@ function econBeesFunction(queenName, queenObj){
                 bee.memory.pickupID = findContainerID(source.id);
             }
             var pickup = Game.getObjectById(bee.memory.pickupID);
+            console.log(bee.pickup(target));
             if (bee.withdraw(pickup, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
                 bee.moveTo(pickup.pos)
             }
+            else if (bee.withdraw(pickup, RESOURCE_ENERGY)== ERR_INVALID_TARGET){
+                if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
+                    bee.moveTo(target.pos);
+                }
+            }
+
         }
         else{
             var storageID = bee.memory.storage;
@@ -496,13 +505,15 @@ function maintenanceSpawning(queenName, queenObj, beeLevel){
     var queenLevel = queenObj['level'];
     var noWorkers = queenLevel - 1;
 
-    if (queenObj['bees']['worker'] < noWorkers || (!queenObj['bees']['worker'] && noWorkers > 0)){
+    if (queenObj['bees']['worker'].length < noWorkers || (!queenObj['bees']['worker'] && noWorkers > 0)){
+        db.vLog("Spawning a worker.");
         creepCreator(queenObj['inactiveSpawns'][0], 
                                 'worker', 
                                 beeLevel,
                                 queenName
                             );
     }
+    return;
 }
 
 function maintenanceBeesFunction(queenName, queenObj){
@@ -555,13 +566,19 @@ function maintenanceBeesFunction(queenName, queenObj){
                     }
                 }
                 else {
-                    if(repairArray.length > 0) {
+                    if(queenObj['constructionSites'] && queenObj['constructionSites'].length>0){
+                        var site = queenObj['constructionSites'][0];
+                        if(ourBee.build(site) == ERR_NOT_IN_RANGE){
+                            ourBee.moveTo(site);
+                        }
+                    }
+                    else if(repairArray.length > 0) {
                         if(ourBee.repair(repairArray[0]) == ERR_NOT_IN_RANGE) {
                             ourBee.moveTo(repairArray[0]);
                         }
-                    ourBee.memory.repairTarget = repairArray[0].id;
-                    repairArray.splice(0,1);
-                }
+                        ourBee.memory.repairTarget = repairArray[0].id;
+                        repairArray.splice(0,1);
+                    }
                 }
             }
         }
@@ -630,8 +647,8 @@ function upgradeController(bee){
 }
 
 // A simple check, based on our max energy storage, on how advanced we want our creeps to be.
-function calculateLevel(energyMax){
-    if (energyMax < 550){
+function calculateLevel(energyMax, queenName){
+    if (energyMax < 550 || Game.rooms[queenName].find(FIND_MY_CREEPS).length <= 1){
         return 1;
     }
     else if (550 <=  energyMax && energyMax < 800){
