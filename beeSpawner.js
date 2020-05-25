@@ -20,6 +20,19 @@ function getBody(role, level){
         case "captor": return getBody_Capture(level);
         case "swarm": return getBody_Swarm(level);
         case "captorBuilder": return getBody_CaptorBuilder(level);
+        case "shipper": return getBody_Shipper(level);
+    }
+}
+
+function getBody_Shipper(level){
+    switch (level){
+        case 1: return [CARRY, MOVE]
+        case 2: return [CARRY, CARRY, CARRY, CARRY, 
+                        MOVE, MOVE, MOVE, MOVE];
+        case 3: return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
+                        MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
+        case 4: return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,
+                        MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]
     }
 }
 

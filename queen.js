@@ -1,40 +1,43 @@
-const verboseLogging = 0;
 const noHaulers = 4;
+const noShipper = 1;
+const noDrones = 2;
 
 var creepCreator = require('beeSpawner');
 var db = require('debugTools');
+var captureFunciton = require('bee.captor');
 
 module.exports = function(queenName, empressOrders, queenObj){
 
-    // TODO: Logic to objey the empress
+    db.vLog("~~~~~~~~" + queenName + "~~~~~~~~");
+    db.vLog("Level "+queenObj['level']+".")
+    db.vLog("Hostile power is currently " + queenObj['hostilePower'] +".");
+    db.vLog("Currently "+queenObj["energyNow"]+" out of a possible "+queenObj["energyMax"]+ " energy.");
 
-    // TODO: Logic to defend the Queen's terriotiry
+    if(queenObj['inactiveSpawns'].length > 0){
+        var beeLevel = calculateLevel(queenObj['energyMax']);
 
-    //"OTHERWISE" we should just expand economy:
+        maintenanceSpawning(queenName, queenObj, beeLevel); 
+        normalEconomySpawning(queenName, queenObj, beeLevel);
+        captureSpawning(queenName, queenObj, empressOrders, beeLevel);
+    }
+    else{
+        db.vLog("There are no inactive spawns.")
+    }
 
-    maintenanceSpawning(queenName, queenObj); 
     maintenanceBeesFunction(queenName, queenObj);
-    normalEconomySpawning(queenName, queenObj);
     econBeesFunction(queenName, queenObj);
-    captureSpawning(queenName, queenObj, empressOrders);
+    
     captureFunciton(queenName, queenObj, empressOrders);
     defnseFunction(queenName, queenObj);
-
-
     
 }
 
-function captureSpawning(queenName, queenObj, empressOrders){
+function captureSpawning(queenName, queenObj, empressOrders, beeLevel){
 
-    if(queenObj['inactiveSpawns'].length == 0){
-        return;
-    }
-
-    var beeLevel = calculateLevel(queenObj['energyMax']);
     if (empressOrders && empressOrders['order']=='capture' && beeLevel > 2){
         if(typeof queenObj['bees']['captor'] == 'undefined' && 
             Game.rooms[empressOrders['room']].controller.my == false){
-            console.log("We'd like to spawn a captor");
+            db.vLog("Spawning Captor.");
             creepCreator(queenObj['inactiveSpawns'][0], 
                                         'captor', 
                                         beeLevel,
@@ -45,8 +48,7 @@ function captureSpawning(queenName, queenObj, empressOrders){
         }
         if (typeof queenObj['bees']['captorBuilder'] == 'undefined' ||
             queenObj['bees']['captorBuilder'].length < 4){
-
-            console.log("We'd like to spawn a captor builder.");
+            db.vLog("Spawning Captor Builder.");
             creepCreator(queenObj['inactiveSpawns'][0], 
                                         'captorBuilder', 
                                         beeLevel,
@@ -58,81 +60,14 @@ function captureSpawning(queenName, queenObj, empressOrders){
     }
 }
 
-function captureFunciton(queenName, queenObj, empressOrders){
-    for(var bee in queenObj['bees']['captor']){
-        var beeName = queenObj['bees']['captor'][bee];
-        var bee = Game.creeps[beeName];
-        if(bee.room.name != bee.memory.targetRoom){
-            bee.moveTo(new RoomPosition(25, 25, bee.memory.targetRoom));
-        }
-        else{
-            if(bee.room.controller) {
-                if(bee.claimController(bee.room.controller) == ERR_NOT_IN_RANGE) {
-                    bee.moveTo(bee.room.controller);
-                }
-            }
-        }
-    }
-    for(var bee in queenObj['bees']['captorBuilder']){
-        var beeName = queenObj['bees']['captorBuilder'][bee];
-        var bee = Game.creeps[beeName];
-        if(bee.room.name != bee.memory.targetRoom){
-            bee.moveTo(new RoomPosition(25, 25, bee.memory.targetRoom));
-        }
-        else{
-            var source = bee.pos.findClosestByRange(FIND_SOURCES);
-            var status = 'none'
-            if (bee.carry.energy == bee.carryCapacity){
-                bee.memory.status = 'full';
-            }
-            else if (bee.carry.energy == 0){
-                bee.memory.status = 'empty';
-            }
-
-            if(bee.memory.status == 'empty') {
-                if(bee.harvest(source) == ERR_NOT_IN_RANGE) {
-                    bee.moveTo(source, {visualizePathStyle: {stroke: '#ffaa00'}});
-                }
-                else(bee.harvest(source));
-            }
-            else if (bee.memory.status == 'full'){
-                var targets = bee.room.find(FIND_STRUCTURES, {
-                    filter: (structure) => {
-                        return (structure.structureType == STRUCTURE_SPAWN)
-                    }
-                });
-                if(targets.length > 0) {
-                    if(bee.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                        bee.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
-                    }
-                }
-                else{
-                    targets = bee.room.find(FIND_CONSTRUCTION_SITES);
-                    if(targets.length > 0) {
-                        if(bee.build(targets[0]) == ERR_NOT_IN_RANGE) {
-                            bee.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-function normalEconomySpawning(queenName, queenObj){
-    // First, if all the spawns are active, we don't really need to do anything.
-    // Because we can't do antyhing.
-    if(queenObj['inactiveSpawns'].length == 0){
-        return;
-    }
-
-    var beeLevel = calculateLevel(queenObj['energyMax']);
+function normalEconomySpawning(queenName, queenObj, beeLevel){
 
     if (_.isEmpty(queenObj['bees'])){
         // This runs only if we have 0 bees anywhere.
         if (beeLevel == 1 || queenObj['energyNow'] < 500){
             // This will run if our creep level is 1, meaning that we're probably starting off
             // or things are really bad.
+            db.vLog("Spawning starter.");
             creepCreator(queenObj['inactiveSpawns'][0], "starter", 1, queenName);
             return;
         }
@@ -152,8 +87,12 @@ function normalEconomySpawning(queenName, queenObj){
     var haulerArray = queenObj['bees']['hauler'];
     var localSources = queenObj['localSources'];
 
+    var shipperArray = queenObj['bees']['shipper'];
+    var droneArray = queenObj['bees']['drone'];
+
     var harvestedSourceArray=[];
     var hauledSourceObject={};
+    var shippedSourceObject={};
 
     // Loop through all of our harvesters.
     // The result of this is an array (harvestedSourceArray) of all the sources
@@ -170,8 +109,19 @@ function normalEconomySpawning(queenName, queenObj){
         }
     }
 
-    // Same thing for haulers, but we had an object with each one.
-    // Easier to keep track of all of em that way.
+
+    // Specialization is a key concept in keeping things as simple and CPU efficent as possible.
+    // When we start any room- basically any room from levels 1-4- we don't have any place to put
+    // energy that's very efficent except for the conatiners.  Therefore the best thing any bee
+    // can do with any energy is put it to good use by USING it.
+
+    // That changes with Storage, however.  Once built, we have 1,000,000 units of storage and we can
+    // have the bees dedicate themselves to one task.
+
+    var storage = queenObj['storage'];
+
+    // The following is copy/paste.
+    // TODO: Move into funct.
 
     for (var hauler in haulerArray){
         for (source in localSources){
@@ -181,6 +131,19 @@ function normalEconomySpawning(queenName, queenObj){
                 }
                 else{
                      hauledSourceObject[localSources[source]].push(haulerArray[hauler])
+                }
+            }
+        }
+    }
+
+    for (var shipper in shipperArray){
+        for (source in localSources){
+            if (Game.creeps[shipperArray[shipper]].memory.source == localSources[source]){
+                if(!shippedSourceObject[localSources[source]]){
+                     shippedSourceObject[localSources[source]] =[shipperArray[shipper]];
+                }
+                else{
+                     shippedSourceObject[localSources[source]].push(shipperArray[shipper])
                 }
             }
         }
@@ -197,8 +160,10 @@ function normalEconomySpawning(queenName, queenObj){
         if (unharvestedSourceArray.includes(localSources[source])){
             // Create a harvester bee and set it loose on the source.
             // Return cuz we're done.
+            db.vLog("Spawning Harvester.");
             var container = findContainerID(localSources[source]);
             if (container){
+                
                 creepCreator(queenObj['inactiveSpawns'][0], 
                                 'harvester', 
                                 beeLevel,
@@ -210,6 +175,7 @@ function normalEconomySpawning(queenName, queenObj){
                             );
             }
             else{
+
                  creepCreator(queenObj['inactiveSpawns'][0], 
                                 'harvester', 
                                 beeLevel,
@@ -219,11 +185,34 @@ function normalEconomySpawning(queenName, queenObj){
             }
             return;
         }
+        else if (storage){
+            if(!shippedSourceObject[localSources[source]] || 
+                shippedSourceObject[localSources[source]].length < noShipper){
+                db.vLog("Spawning Shipper.");
+                creepCreator(queenObj['inactiveSpawns'][0], 
+                                    'shipper', 
+                                    beeLevel,
+                                    queenName,
+                                    {'source':localSources[source],
+                                    'storage': storage}
+                                );
+                return;
+            }
+            else if (droneArray == undefined || droneArray.length < noDrones){
+                db.vLog("Spawning Drone.");
+                creepCreator(queenObj['inactiveSpawns'][0], 
+                                    'drone', 
+                                    beeLevel,
+                                    queenName
+                                );
+                return;
+            }
+        }
         else if (!hauledSourceObject[localSources[source]] || hauledSourceObject[localSources[source]].length < noHaulers){
             // Otherwise, if hauledSourceObject doesn't have a value withe the key
             // of source, we know that source doesn't have haulers.
             // If it does, but he count is below our const, we still need more.
-
+            b.vLog("Spawning Hauler.");
             creepCreator(queenObj['inactiveSpawns'][0], 
                 'hauler',
                 beeLevel, 
@@ -383,14 +372,32 @@ function econBeesFunction(queenName, queenObj){
             } 
         }
     }
+
+    for (var bee in queenObj['bees']['shipper']){
+        var beeName = queenObj['bees']['shipper'][bee];
+        var bee = Game.creeps[beeName];
+        if(bee.carry.energy == 0){      
+            if(!bee.memory.pickupID){
+                var source = Game.getObjectById(bee.memory.source);
+                bee.memory.pickupID = findContainerID(source.id);
+            }
+            var pickup = Game.getObjectById(bee.memory.pickupID);
+            if (bee.withdraw(pickup, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
+                bee.moveTo(pickup.pos, {visualizePathStyle: {stroke: 'green'}})
+            }
+        }
+        else{
+            var storageID = bee.memory.storage;
+            var storage = Game.getObjectById(storageID);
+            if(bee.transfer(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                bee.moveTo(storage, {visualizePathStyle: {stroke: 'green'}});
+            }
+        }
+    }
 }
 
-function maintenanceSpawning(queenName, queenObj){
-    if(queenObj['inactiveSpawns'].length == 0){
-        return;
-    }
+function maintenanceSpawning(queenName, queenObj, beeLevel){
 
-    var beeLevel = calculateLevel(queenObj['energyMax']);
     var queenLevel = queenObj['level'];
     var noWorkers = queenLevel - 1;
 
@@ -504,6 +511,8 @@ function mineSource(bee, source){
         
     }
     else{
+        var container = Game.getObjectById(bee.memory.pickupID);
+        bee.moveTo(container, {visualizePathStyle: {stroke: '#ffaa00'}});
         bee.harvest(source);
         if(!bee.memory.container){
             bee.room.createConstructionSite(bee.pos.x, bee.pos.y, STRUCTURE_CONTAINER);
@@ -550,7 +559,8 @@ function starterMining(beeName, queenObj){
     else{
         var targets = bee.room.find(FIND_STRUCTURES, {
             filter: (structure) => {
-                return (structure.structureType == STRUCTURE_SPAWN)
+                return (structure.structureType == STRUCTURE_SPAWN ||
+                    structure.structureType == STRUCTURE_EXTENSION)
             }
         });
         if(targets.length > 0) {

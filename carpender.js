@@ -2,7 +2,7 @@ module.exports = function(queenName, queenObject){
 
 	levelUpConstruction(queenName, queenObject);
 
-	if (true){
+	if (false){
 		var roomName = 'E37N22'
 		buildRoom(queenName);
 	}
@@ -40,7 +40,6 @@ function levelUpConstruction(queenName, queenObject){
 }
 
 function buildRoom(roomName){
-	console.log("This");
 	var room = Game.rooms[roomName];
 	var terrain = room.getTerrain();
 	var sources = room.find(FIND_SOURCES);

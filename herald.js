@@ -11,8 +11,6 @@ module.exports = function(){
     // Eventually I suspect this will be too specific, and global efforts across rooms will require 
     // an object reporting more globally.
 
-    db.vLog("The Herald is starting.");
-
     // We'll start with declaring these variables:
 
 	var heraldObject = {};
@@ -32,8 +30,6 @@ module.exports = function(){
         // which have spawns.
         
         var name = Game.spawns[spawn].room.name;
-
-        db.vLog("Starting Herald for spawn " + name + ".");
 
         // We're grabbing the ROOM name here as it makes the most sense for our Queen ID.
         // QueenBAI 1 used spawn name which runs into a lot of problems when we build more than 1 to a room.
@@ -57,7 +53,8 @@ module.exports = function(){
                         return (structure.structureType == STRUCTURE_SPAWN || 
                             structure.structureType == STRUCTURE_STORAGE || 
                             structure.structureType == STRUCTURE_TOWER ||
-                            structure.structureType == STRUCTURE_EXTENSION);
+                            structure.structureType == STRUCTURE_EXTENSION ||
+                            structure.structureType == STRUCTURE_STORAGE);
                     }
                 });
             var constructionSites = Game.spawns[spawn].room.find(FIND_CONSTRUCTION_SITES);
@@ -91,6 +88,19 @@ module.exports = function(){
                 }
             }
 
+             var storageArray = Game.spawns[spawn].room.find(FIND_STRUCTURES, {
+                filter: (structure) => {
+                    return (
+                        structure.structureType == STRUCTURE_STORAGE);
+                }
+            });
+
+            var storageBool = false;
+
+            if (storageArray.length > 0){
+                storageBool = storageArray[0].id;
+            }
+
             // And add it to the object:
 			queenObject[name] = {
                 "energyNow": Game.spawns[spawn].room.energyAvailable,
@@ -103,7 +113,8 @@ module.exports = function(){
                 "bees":{},
                 "level": level,
                 "levelUpBool": levelUpBool,
-                "hostilePower": hostilePower
+                "hostilePower": hostilePower,
+                "storage": storageBool
             };
 		}
 	};

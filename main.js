@@ -26,7 +26,7 @@ var runCarpender = require('carpender');
 var db = require('debugTools');
 
 module.exports.loop = function () {
-    db.vLog("~~~~~~~~~~"+ Game.time+"~~~~~~~~~~");
+    db.vLog("~~~~~~~~~~~~~~~~"+ Game.time+"~~~~~~~~~~~~~~~~");
     
     var heraldReport = runHerald();
 
@@ -42,6 +42,7 @@ module.exports.loop = function () {
         runCarpender(queenName, heraldReport['queenObject'][queenName]);
     }
 
+    db.vLog("~~~~~~~~Final Log~~~~~~~~");
     db.vLog("Currently " + Game.cpu.bucket + 
         " in the bucket, with " + Game.cpu.tickLimit + 
         " as the current tick limit.");

@@ -1,0 +1,4 @@
+Bugs:
+
+1) Harvesters sometimes do not get to their containers if they can mine before they get there.
+2) 
