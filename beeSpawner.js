@@ -21,6 +21,7 @@ function getBody(role, level){
         case "swarm": return getBody_Swarm(level);
         case "captorBuilder": return getBody_CaptorBuilder(level);
         case "shipper": return getBody_Shipper(level);
+        case "drone": return getBody_Hauler(level);
     }
 }
 
