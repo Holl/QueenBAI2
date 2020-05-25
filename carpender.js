@@ -2,11 +2,9 @@ module.exports = function(queenName, queenObject){
 
 	levelUpConstruction(queenName, queenObject);
 
-	if (false){
-		var roomName = 'E35N21'
-		var roomObj = Game.rooms[roomName];
-		var roomTerrainObject = roomObj.Terrain;
-		var room = convertToArray(roomTerrainObject, roomObj);
+	if (true){
+		var roomName = 'E37N22'
+		buildRoom(queenName);
 	}
 }
 
@@ -39,6 +37,50 @@ function levelUpConstruction(queenName, queenObject){
 				break;
 		}
 	}
+}
+
+function buildRoom(roomName){
+	console.log("This");
+	var room = Game.rooms[roomName];
+	var terrain = room.getTerrain();
+	var sources = room.find(FIND_SOURCES);
+	var controller = room.controller;
+	var printString = '        ';
+	console.log(sources);
+
+	for (var y=0; y<50; y++){
+		for (var x=0; x<50; x++){
+			if (x == sources[0].pos.x && y == sources[0].pos.y){
+				printString += '  S';
+			}
+			else if (sources[1] && x == sources[1].pos.x && y == sources[1].pos.y){
+				printString += '  S';
+			}
+			else if (x == controller.pos.x && y == controller.pos.y){
+				printString += '  C';
+			}
+			else{
+				var point = terrain.get(x,y);
+				switch(point) {
+				    case TERRAIN_MASK_WALL:
+				        printString += '   ';
+				        break;
+				    case TERRAIN_MASK_SWAMP:
+				    case 0:
+				    	if (y == 0 || x == 0 || y == 49 || x == 49){
+				    		printString += '  E'
+				    	}
+				    	else{
+				    		printString += '  O'
+				    	}
+				        break;
+				}
+			}
+		}
+		printString +='\n\t'
+	}
+
+	console.log(printString);
 }
 
 function roadsToRoam(room, spawnPos){
@@ -93,78 +135,6 @@ function buildRoad(room, startX, startY, endX, endY){
 
 // Converting the insane object into something more manageable,
 // an array of arrays.  50 points in each of the 50 arrays.
-function convertToArray(roomTerrainObject, roomObj){
-	console.log(JSON.stringify(roomTerrainObject));
-	var finalArray = [];
-	var rowArray = [];
-	var count = 0;
-	for (var point in roomTerrainObject){
-		rowArray.push(roomTerrainObject[point]);
-		if (count == 49){
-			finalArray.push(rowArray);
-			rowArray = [];
-			count = 0;
-		}
-		else{
-			count++;
-		}
-	}
-
-	var sources = roomObj.find(FIND_SOURCES);
-	var avgCount = 1;
-	var centerX = 0;
-	var centerY = 0;
-	for (var source in sources){
-		console.log(finalArray);
-		finalArray[sources[source].pos.y][sources[source].pos.x] = "S";
-		centerY+= sources[source].pos.y;
-		centerX+= sources[source].pos.x;
-		avgCount++;
-	}
-	var controller = roomObj.controller;
-	finalArray[roomObj.controller.pos.y][roomObj.controller.pos.x] = "C";
-
-	centerY+= roomObj.controller.pos.y;
-	centerX+= roomObj.controller.pos.x;
-	centerY=centerY/avgCount;
-	centerX=centerX/avgCount;
-
-	finalArray[Math.floor(centerY)][Math.floor(centerX)] = "X";
-
-	return finalArray;
-
-}
-
-// Put together a printable map to the console log.
-function buildRoomMap(roomArray){
- 	var count = 0;
- 	var finalString = '        ';
-
- 	for (var i = 0; i<roomArray.length; i++){
-
-    	for (var y = 0; y<roomArray[i].length; y++){
-    		var point = roomArray[i][y];
-    		if(point == 0 || point == 2){
-    			finalString+= '  ';
-    		}
-    		else if(point == 1){
-	    		finalString+= 'W ';
-	    	}
-	    	else if(point == "S"){
-	    		finalString+= 'S ';
-	    	}
-	    	else if (point == "C"){
-	    		finalString += 'C '
-	    	}
-	    	else if (point == "X"){
-	    		finalString += 'X '
-	    	}
-    	}
-    	finalString+='\n\t';
-    };
-
-    console.log(finalString);
-}
 
 function createDiamond(room, x, y){
 	room.createConstructionSite(x,y-1,STRUCTURE_EXTENSION);
