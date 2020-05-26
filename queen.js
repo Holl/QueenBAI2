@@ -505,7 +505,7 @@ function maintenanceSpawning(queenName, queenObj, beeLevel){
     var queenLevel = queenObj['level'];
     var noWorkers = queenLevel - 1;
 
-    if (queenObj['bees']['worker'].length < noWorkers || (!queenObj['bees']['worker'] && noWorkers > 0)){
+    if (queenObj['bees']['worker'] && queenObj['bees']['worker'].length < noWorkers || (!queenObj['bees']['worker'] && noWorkers > 0)){
         db.vLog("Spawning a worker.");
         creepCreator(queenObj['inactiveSpawns'][0], 
                                 'worker', 

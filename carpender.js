@@ -125,10 +125,9 @@ function roadsToRoam(room, spawnPos){
 
 function buildRoad(room, startX, startY, endX, endY){
 	var route = room.getPositionAt(startX,startY).findPathTo(endX,endY);
+	route.pop();
 	for (var point in route){
-		if (point !== route.length-1){
-			room.getPositionAt(route[point].x,route[point].y).createConstructionSite(STRUCTURE_ROAD);
-		}
+		room.getPositionAt(route[point].x,route[point].y).createConstructionSite(STRUCTURE_ROAD);
 	}
 }
 
