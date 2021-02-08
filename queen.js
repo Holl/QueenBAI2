@@ -1,6 +1,6 @@
-const noHaulers = 4;
+const noHaulers = 2;
 const noShipper = 1;
-const noDrones = 2;
+const noDrones = 1;
 const noUpgraders = 1;
 
 var creepCreator = require('beeSpawner');
@@ -24,13 +24,14 @@ module.exports = function(queenName, empressOrders, queenObj){
 
         normalEconomySpawning(queenName, queenObj, beeLevel);
         captureSpawning(queenName, queenObj, empressOrders, beeLevel);
+        maintenanceSpawning(queenName, queenObj, beeLevel);
     }
     else{
         db.vLog("There are no inactive spawns.")
     }
 
-    maintenanceBeesFunction(queenName, queenObj);
     econBeesFunction(queenName, queenObj);
+    maintenanceBeesFunction(queenName, queenObj);
     
     captureFunciton(queenName, queenObj, empressOrders);
     defnseFunction(queenName, queenObj);
@@ -168,6 +169,19 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
             // Return cuz we're done.
             db.vLog("Spawning Harvester.");
             var container = common.findContainerIDFromSource(localSources[source]);
+
+            // Emergency lvl 1 harvester, in case there isn't the energy to support a full one?
+            // 
+            // creepCreator(queenObj['inactiveSpawns'][0], 
+            //                     'harvester', 
+            //                     1,
+            //                     queenName,
+            //                     {'source':localSources[source],
+            //                     'pickupID': container.id,
+            //                     'container': 1
+            //                     }
+            //                 );
+            
             if (container){
                 creepCreator(queenObj['inactiveSpawns'][0], 
                                 'harvester', 
@@ -189,16 +203,8 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
             }
             return;
         }
-        else if (upgraderArray == undefined || upgraderArray.length < 1){
-            db.vLog("Spawning Upgrader.");
-            creepCreator(queenObj['inactiveSpawns'][0], 
-                                'upgrader', 
-                                beeLevel,
-                                queenName
-                            );
-            return;
-        }
         // If we HAVE a real storage, we can be more specialized, and therefore, CPU efficent.
+        // else if (storage) was here, but this all seems crazy.
         else if (storage){
             if(!shippedSourceObject[localSources[source]] || 
                 shippedSourceObject[localSources[source]].length < noShipper){
@@ -225,11 +231,12 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
                 db.vLog("Spawning Upgrader.");
                 creepCreator(queenObj['inactiveSpawns'][0], 
                                     'upgrader', 
-                                    beeLevel,
+                                    1,
                                     queenName
                                 );
                 return;
             }
+            return;
         }
         // If not, haulers do basically everything.
         else if (!hauledSourceObject[localSources[source]] || hauledSourceObject[localSources[source]].length < noHaulers){
@@ -245,14 +252,23 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
             );
             return;
         }
+        else if (upgraderArray == undefined || upgraderArray.length < 1){
+            db.vLog("Spawning Upgrader.");
+            creepCreator(queenObj['inactiveSpawns'][0], 
+                                'upgrader', 
+                                1,
+                                queenName
+                            );
+            return;
+        }
     }
-    maintenanceSpawning(queenName, queenObj, beeLevel);
 };
 
 function maintenanceSpawning(queenName, queenObj, beeLevel){
 
     var queenLevel = queenObj['level'];
-    var noWorkers = queenLevel - 1;
+    // var noWorkers = queenLevel - 1;
+    var noWorkers = 1;
 
     if (queenObj['bees']['worker'] && queenObj['bees']['worker'].length < noWorkers || (!queenObj['bees']['worker'] && noWorkers > 0)){
         db.vLog("Spawning a worker.");

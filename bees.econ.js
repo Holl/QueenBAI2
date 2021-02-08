@@ -174,7 +174,6 @@ module.exports = function(queenName, queenObj){
                 bee.memory.pickupID = common.findContainerIDFromSource(source.id);
             }
             var pickup = Game.getObjectById(bee.memory.pickupID);
-            console.log(bee.pickup(target));
             if (bee.withdraw(pickup, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
                 bee.moveTo(pickup.pos)
             }
@@ -252,8 +251,8 @@ module.exports = function(queenName, queenObj){
                 if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
                     bee.moveTo(target.pos);
                 }
-                else if(target.structureType == 'container'){
-                     if (bee.withdraw(target, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
+                else if(target && target.structureType == 'container'){
+                     if (bee.withdraw(target, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE){
                         bee.moveTo(target.pos)
                     }
                 }
@@ -262,7 +261,6 @@ module.exports = function(queenName, queenObj){
                 }
             }
             else{
-                console.log("Hopefully this runs once?");
                 var storageObj = Game.rooms[queenName].find(FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_STORAGE}});
                 var storage = storageObj[0]; 
                 if (storage){

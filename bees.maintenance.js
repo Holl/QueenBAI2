@@ -13,7 +13,7 @@ module.exports = function(queenName, queenObj){
                 if (ourBee.memory.pickupID){
                     var container = Game.getObjectById(ourBee.memory.pickupID);
                     if (ourBee.withdraw(container, RESOURCE_ENERGY)== ERR_NOT_IN_RANGE){
-                        ourBee.moveTo(container.pos)
+                        ourBee.moveTo(container.pos, {})
                     }
                 }
                 else{
@@ -39,7 +39,7 @@ module.exports = function(queenName, queenObj){
                 if (ourBee.memory.repairTarget){
                     var storedTarget = Game.getObjectById(ourBee.memory.repairTarget);
                     if (storedTarget.hits < storedTarget.hitsMax){
-                        ourBee.moveTo(storedTarget);
+                        ourBee.moveTo(storedTarget, {});
                         ourBee.repair(storedTarget);
                     }
                     else{
@@ -48,6 +48,7 @@ module.exports = function(queenName, queenObj){
                     }
                 }
                 else {
+                    // This only makes sense outside of repair lenght.
                     if(queenObj['constructionSites'] && queenObj['constructionSites'].length>0){
                         var site = queenObj['constructionSites'][0];
                         if(ourBee.build(site) == ERR_NOT_IN_RANGE){
@@ -56,7 +57,7 @@ module.exports = function(queenName, queenObj){
                     }
                     else if(repairArray.length > 0) {
                         if(ourBee.repair(repairArray[0]) == ERR_NOT_IN_RANGE) {
-                            ourBee.moveTo(repairArray[0]);
+                            ourBee.moveTo(repairArray[0], {});
                         }
                         ourBee.memory.repairTarget = repairArray[0].id;
                         repairArray.splice(0,1);
@@ -65,5 +66,4 @@ module.exports = function(queenName, queenObj){
             }
         }
     }
-    
 }
