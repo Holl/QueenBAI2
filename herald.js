@@ -74,7 +74,7 @@ module.exports = function(){
             }
             else{
                 if (Memory[spawn]['level'] != level){
-                    console.log("Level up!");
+                    db.vLog("Level up!");
                     Memory[spawn]['level'] = level;
                     levelUpBool = 1;
                 }
@@ -169,7 +169,6 @@ module.exports = function(){
                 // The empress should rally a response to
                 //          recapture or something.
 
-                // console.log("Bee "+ creep +" has loyality to a DEAD QUEEN!");
 
                 deadQueenBees.push(creep);
             }
@@ -180,8 +179,6 @@ module.exports = function(){
             // This means the Bee has no queen at all.
             // This may be the case for empire bees, but for now
             // it's just a catch all for problematic bees.
-
-            // console.log(creep + " has no Queen!")
 
 			freeBeeArray.push(creep);
 		}

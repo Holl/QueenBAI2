@@ -1,10 +1,11 @@
+var db = require('debugTools');
+
 module.exports = function(queenName, queenObject){
 
 	levelUpConstruction(queenName, queenObject);
 
-	if (false){
-		var roomName = 'E37N22'
-		buildRoom(queenName);
+	if (true){ 
+		findCenterSpawnLocation(queenName);
 	}
 }
 
@@ -39,13 +40,96 @@ function levelUpConstruction(queenName, queenObject){
 	}
 }
 
+function findCenterSpawnLocation(roomName){
+	var room = Game.rooms[roomName];
+	var terrain = room.getTerrain();
+	var sources = room.find(FIND_SOURCES);
+	var controller = room.controller;
+	var possiblePos = [];
+
+	var totalX = 0;
+	var totalY = 0;
+
+	for (var x = 0; x < sources.length; x++){
+		totalX+=sources[x].pos.x;
+		totalY+=sources[x].pos.y;
+	}
+
+	totalX+=controller.pos.x;
+	totalY+=controller.pos.y;
+
+	var avgX = totalX/(sources.length + 1);
+	var avgY = totalY/(sources.length + 1);
+
+	for (var y=8; y<41; y++){ 
+		var count = 0;
+		for (var x=8; x<41; x++){
+			var point = terrain.get(x,y);
+			if (point == 0 || point == 2){
+				count++;
+			}
+			else{
+				count=0;
+			}
+			if (count>10){
+				var baseCheckBool = checkWallsAroundSpawn(x,y,terrain);
+				if (baseCheckBool == true){
+					db.vLog("Base can start at (" + x +"," + y + ")");
+					possiblePos.push({"x":x,"y":y});
+				}
+			}
+		}
+	}
+
+	db.vLog("The average X is " + avgX);
+	db.vLog("The average Y is " +avgY);
+
+	var finalPos = pythagorasCheck(avgX,avgY,possiblePos);
+
+	console.log("Carpenter thinks we should build the starting spawn at (" + finalPos.x + "," + finalPos.y + ")");
+
+}
+
+function pythagorasCheck(avgX,avgY,positionArray){
+	var minDistance = 10000000;
+	var closestPoint;
+	var distance = 0;
+	for (var a = 0; a < positionArray.length; a++) {
+		distance = Math.sqrt((avgX - positionArray[a].x) * (avgX - positionArray[a].x) + (avgY - positionArray[a].y) * (avgY - positionArray[a].y));
+		if (distance < minDistance) {
+			minDistance = distance;
+			closestPoint = positionArray[a];
+		}
+	}
+
+	return closestPoint;
+}
+
+function checkWallsAroundSpawn(x,y,terrain){
+	var shapeArray = [1,3,5,7,9,11,9,7,5,3,1];
+
+	for (var checkY=0; checkY<11; checkY++){
+		var leftMostX = 0-((shapeArray[checkY]-1)/2);
+		for (var checkX=leftMostX; checkX<shapeArray[checkY]+leftMostX; checkX++){
+			var newX = x + checkX;
+			var newY = y + (checkY - 5);
+			if (terrain.get(newX, newY) == 1){
+				db.vLog(x + "," + y + " doesn't work because of " + newX + "," +newY + ".  We started this row's count at " + leftMostX + " and we counted " + shapeArray[checkY] + " times.");
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+
 function buildRoom(roomName){
 	var room = Game.rooms[roomName];
 	var terrain = room.getTerrain();
 	var sources = room.find(FIND_SOURCES);
 	var controller = room.controller;
 	var printString = '        ';
-	console.log(sources);
+	console.log(terrain);
 
 	for (var y=0; y<50; y++){
 		for (var x=0; x<50; x++){
