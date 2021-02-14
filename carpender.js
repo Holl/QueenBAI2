@@ -36,12 +36,6 @@ function levelUpConstruction(queenName, queenObject){
 	}
 }
 
-function roomStart(roomName){
-	var spawnLoc = common.findCenterSpawnLocation(roomName);
-	room = Game.rooms[roomName];
-	room.createConstructionSite(spawnLoc.x, spawnLoc.y, STRUCTURE_EXTENSION);
-}
-
 
 function buildRoom(roomName){
 	var room = Game.rooms[roomName];
