@@ -159,7 +159,7 @@ module.exports = function(queenName, queenObj){
                 }
             }
             else{
-                upgradeController(bee);
+                common.upgradeController(bee);
             } 
         }
     }
@@ -282,7 +282,7 @@ module.exports = function(queenName, queenObj){
             }
         }
         else{
-            upgradeController(bee);
+            common.upgradeController(bee);
         } 
     }
 }
@@ -341,9 +341,3 @@ function mineSource(bee, source){
     }
 }
 
-// Function to go to and upgrade a controller.
-function upgradeController(bee){
-    if(bee.upgradeController(bee.room.controller) == ERR_NOT_IN_RANGE) {
-        bee.moveTo(bee.room.controller);
-    }
-}

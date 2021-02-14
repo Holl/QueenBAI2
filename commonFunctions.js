@@ -4,6 +4,11 @@ module.exports = {
 	doesObjectHaveKeysOfArray(array, obj){
 		return array.every(item => obj.hasOwnProperty(item));
 	},
+	upgradeController(bee){
+	    if(bee.upgradeController(bee.room.controller) == ERR_NOT_IN_RANGE) {
+	        bee.moveTo(bee.room.controller);
+	    }
+	},
 	findContainerIDFromSource(sourceID){
 	    var sourcePos = Game.getObjectById(sourceID).pos
 	    var container = sourcePos.findInRange(FIND_STRUCTURES,1,

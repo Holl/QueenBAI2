@@ -36,9 +36,15 @@ module.exports = function(queenName, empressOrders, queenObj){
             var exitArray = [exits[1], exits[3], exits[5], exits[7]];
             var containCheck = common.doesObjectHaveKeysOfArray(exitArray,scoutData);
             var finalCapture = '';
-            if (Memory.queens[queenName] && Memory.queens[queenName].finalCapture){
+            if (Memory.queens[queenName] && Memory.queens[queenName].finalCapture){  
                 var finalCapture = Memory.queens[queenName].finalCapture;
-                captureSpawning(queenName, queenObj, finalCapture, beeLevel)
+                if (Game.rooms[finalCapture] && Game.rooms[finalCapture].controller.level == 4){
+                    Memory.empress.scoutData[finalCapture]['captured'] = true;
+                    Memory.queens[queenName].finalCapture = '';
+                }
+                else{
+                    captureSpawning(queenName, queenObj, finalCapture, beeLevel)
+                }
             }
             else if (containCheck){
                 var room = pickExpandRoom(exitArray, scoutData);
@@ -79,7 +85,9 @@ function pickExpandRoom(roomsArray, scoutData){
         if (roomData['capturable']){
             if(roomData['owner'] == false){
                 if (roomData['deposits']){
-                    topPick = roomName;
+                    if(Game.rooms[roomName] == undefined || !Game.rooms[roomName].controller.my ){
+                        topPick = roomName;
+                    }
                 }
             }
         }
@@ -105,11 +113,10 @@ function captureSpawning(queenName, queenObj, captureRoom, beeLevel){
         var needCaptureBool = false;
         var roomObj = Game.rooms[captureRoom];
         if (roomObj != undefined){
-            if (roomObj.controller.my == true){
+            if (roomObj.controller.my != true){
                 needCaptureBool = true
             }
         }
-        console.log(needCaptureBool);
         if(typeof queenObj['bees']['captor'] == 'undefined' && needCaptureBool){
             db.vLog("Spawning Captor.");
             creepCreator(queenObj['inactiveSpawns'][0], 

@@ -54,23 +54,20 @@ module.exports = function captureFunciton(queenName, queenObj, empressOrders){
                 else(bee.harvest(source));
             }
             else if (bee.memory.status == 'full'){
-                var targets = bee.room.find(FIND_STRUCTURES, {
+                var spawns = bee.room.find(FIND_STRUCTURES, {
                     filter: (structure) => {
                         return (structure.structureType == STRUCTURE_SPAWN)
                     }
                 });
-                if(targets.length > 0) {
-                    if(bee.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                        bee.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
+                constructs = bee.room.find(FIND_CONSTRUCTION_SITES);
+
+                if (constructs){
+                    if(bee.build(constructs[0]) == ERR_NOT_IN_RANGE) {
+                        bee.moveTo(constructs[0], {visualizePathStyle: {stroke: '#ffffff'}});
                     }
                 }
-                else{
-                    targets = bee.room.find(FIND_CONSTRUCTION_SITES);
-                    if(targets.length > 0) {
-                        if(bee.build(targets[0]) == ERR_NOT_IN_RANGE) {
-                            bee.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
-                        }
-                    }
+                else {
+                    common.upgradeController(bee);
                 }
             }
         }

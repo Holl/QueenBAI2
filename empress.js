@@ -12,24 +12,27 @@ module.exports = function(hearldReport){
 
     for (var queenName in hearldReport['queenObject']){
         var storageID = hearldReport['queenObject'][queenName].storage;
-        var storedEnergy = Game.getObjectById(storageID).store.energy;
+        if (storageID){
+            var storedEnergy = Game.getObjectById(storageID).store.energy;
 
-        if (49000 > storedEnergy > 10000){
-            // Stable
-            // TODO:  Does this need different functionality?
-            // Should outside mining be done here?
-            empressOrders[queenName] = 'outsideMining';
-        }
-        else if (storedEnergy > 50000){
-            // Ready for expansion (or attack?)
-            if (queenCount < gcl.level){
-                empressOrders[queenName] = 'expand';
+            if (49000 > storedEnergy > 10000){
+                // Stable
+                // TODO:  Does this need different functionality?
+                // Should outside mining be done here?
+                empressOrders[queenName] = 'outsideMining';
             }
-            else{
-                // Errr put more effort into lvling up I guess?
+            else if (storedEnergy > 50000){
+                // Ready for expansion (or attack?)
+                if (queenCount < gcl.level){
+                    empressOrders[queenName] = 'expand';
+                }
+                else{
+                    // Errr put more effort into lvling up I guess?
+                }
+                
             }
-            
         }
+        
     }
 
     // var flags = Game.flags;
