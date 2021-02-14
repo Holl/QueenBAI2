@@ -1,3 +1,5 @@
+var common = require('commonFunctions');
+
 module.exports = function captureFunciton(queenName, queenObj, empressOrders){
     for(var bee in queenObj['bees']['captor']){
         var beeName = queenObj['bees']['captor'][bee];
@@ -9,6 +11,22 @@ module.exports = function captureFunciton(queenName, queenObj, empressOrders){
             if(bee.room.controller) {
                 if(bee.claimController(bee.room.controller) == ERR_NOT_IN_RANGE) {
                     bee.moveTo(bee.room.controller);
+                }
+                else if(bee.claimController(bee.room.controller) == ERR_INVALID_TARGET){
+                    var spawns = bee.room.find(FIND_STRUCTURES, {
+                        filter: (structure) => {
+                            return (structure.structureType == STRUCTURE_SPAWN)
+                        }
+                    });
+                    var constructions = bee.room.find(FIND_CONSTRUCTION_SITES);
+                    if (spawns.length == 0 && constructions.length == 0){
+                        console.log("Let's set it up.");
+                        var spawnLoc = common.findCenterSpawnLocation(bee.room.name);
+                        bee.room.createConstructionSite(spawnLoc.x,spawnLoc.y,STRUCTURE_SPAWN)
+                    }
+                    else{
+                        // Nothing at the moment.
+                    }
                 }
             }
         }

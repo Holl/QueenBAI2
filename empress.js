@@ -21,8 +21,14 @@ module.exports = function(hearldReport){
             empressOrders[queenName] = 'outsideMining';
         }
         else if (storedEnergy > 50000){
-            // Ready for expansion or attack
-            empressOrders[queenName] = 'expand';
+            // Ready for expansion (or attack?)
+            if (queenCount < gcl.level){
+                empressOrders[queenName] = 'expand';
+            }
+            else{
+                // Errr put more effort into lvling up I guess?
+            }
+            
         }
     }
 

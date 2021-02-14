@@ -1,6 +1,6 @@
 const noHaulers = 2;
 const noShipper = 1;
-const noDrones = 1;
+const noDrones = 2;
 const noUpgraders = 1;
 
 var creepCreator = require('beeSpawner');
@@ -28,8 +28,31 @@ module.exports = function(queenName, empressOrders, queenObj){
 
         normalEconomySpawning(queenName, queenObj, beeLevel);
         maintenanceSpawning(queenName, queenObj, beeLevel);
+
         if (empressOrders == 'expand'){
-            reconnaissanceSpawning(queenName, queenObj, beeLevel, empressOrders);
+            db.vLog("We have orders to expand!");
+            var scoutData = Memory.empress.scoutReports;
+            var exits = Game.map.describeExits(queenName);
+            var exitArray = [exits[1], exits[3], exits[5], exits[7]];
+            var containCheck = common.doesObjectHaveKeysOfArray(exitArray,scoutData);
+            var finalCapture = '';
+            if (Memory.queens[queenName] && Memory.queens[queenName].finalCapture){
+                var finalCapture = Memory.queens[queenName].finalCapture;
+                captureSpawning(queenName, queenObj, finalCapture, beeLevel)
+            }
+            else if (containCheck){
+                var room = pickExpandRoom(exitArray, scoutData);
+                if (!Memory.queens){
+                    Memory.queens = {};
+                }
+                if (!Memory.queens[queenName]){
+                    Memory.queens[queenName] = {};
+                }
+                Memory.queens[queenName].finalCapture = room;
+            }
+            else{
+                reconnaissanceSpawning(queenName, queenObj, beeLevel, empressOrders);
+            }
         }
 
         // captureSpawning(queenName, queenObj, empressOrders, beeLevel);
@@ -47,6 +70,23 @@ module.exports = function(queenName, empressOrders, queenObj){
     
 }
 
+function pickExpandRoom(roomsArray, scoutData){
+    var topPick='';
+    for (roomIndex in roomsArray){
+        var roomName = roomsArray[roomIndex];
+        var roomData = scoutData[roomName];
+
+        if (roomData['capturable']){
+            if(roomData['owner'] == false){
+                if (roomData['deposits']){
+                    topPick = roomName;
+                }
+            }
+        }
+    }
+    return topPick;
+}
+
 function reconnaissanceSpawning(queenName, queenObj, beeLevel, empressOrders){
     var scoutArray = queenObj['bees']['scout'];
     if (scoutArray == undefined || scoutArray.length < 1){
@@ -60,33 +100,39 @@ function reconnaissanceSpawning(queenName, queenObj, beeLevel, empressOrders){
     }
 }
 
-// function captureSpawning(queenName, queenObj, empressOrders, beeLevel){
-
-//     if (empressOrders && empressOrders['order']=='capture' && beeLevel > 2){
-//         if(typeof queenObj['bees']['captor'] == 'undefined' && 
-//             Game.rooms[empressOrders['room']].controller.my == false){
-//             db.vLog("Spawning Captor.");
-//             creepCreator(queenObj['inactiveSpawns'][0], 
-//                                         'captor', 
-//                                         beeLevel,
-//                                         queenName,
-//                                         {'targetRoom':empressOrders['room']}
-//                                     );
-//             return;
-//         }
-//         if (typeof queenObj['bees']['captorBuilder'] == 'undefined' ||
-//             queenObj['bees']['captorBuilder'].length < 4){
-//             db.vLog("Spawning Captor Builder.");
-//             creepCreator(queenObj['inactiveSpawns'][0], 
-//                                         'captorBuilder', 
-//                                         beeLevel,
-//                                         queenName,
-//                                         {'targetRoom':empressOrders['room']}
-//                                     );
-//             return;
-//         }
-//     }
-// }
+function captureSpawning(queenName, queenObj, captureRoom, beeLevel){
+    if (beeLevel > 2){
+        var needCaptureBool = false;
+        var roomObj = Game.rooms[captureRoom];
+        if (roomObj != undefined){
+            if (roomObj.controller.my == true){
+                needCaptureBool = true
+            }
+        }
+        console.log(needCaptureBool);
+        if(typeof queenObj['bees']['captor'] == 'undefined' && needCaptureBool){
+            db.vLog("Spawning Captor.");
+            creepCreator(queenObj['inactiveSpawns'][0], 
+                                        'captor', 
+                                        beeLevel,
+                                        queenName,
+                                        {'targetRoom':captureRoom}
+                                    );
+            return;
+        }
+        if (typeof queenObj['bees']['captorBuilder'] == 'undefined' ||
+            queenObj['bees']['captorBuilder'].length < 4){
+            db.vLog("Spawning Captor Builder.");
+            creepCreator(queenObj['inactiveSpawns'][0], 
+                                        'captorBuilder', 
+                                        beeLevel,
+                                        queenName,
+                                        {'targetRoom':captureRoom}
+                                    );
+            return;
+        }
+    }
+}
 
 function normalEconomySpawning(queenName, queenObj, beeLevel){
 

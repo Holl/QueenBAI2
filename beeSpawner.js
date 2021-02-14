@@ -52,6 +52,11 @@ function getBody_CaptorBuilder(level){
                         WORK, WORK, WORK,
                         MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE
                         ];
+        case 4: return [
+                        CARRY, CARRY, CARRY,
+                        WORK, WORK, WORK,
+                        MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE
+                        ];
     }
 }
 

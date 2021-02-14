@@ -23,7 +23,6 @@ module.exports = function(queenName, queenObj){
         mineSource(beeObj, source);
     }
 
-
     // HAULER BEES
     // The important work force for our hive.  Now we have some actual logic.
     // But first we need to prepare.
