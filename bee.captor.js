@@ -61,7 +61,8 @@ module.exports = function captureFunciton(queenName, queenObj, empressOrders){
                 });
                 constructs = bee.room.find(FIND_CONSTRUCTION_SITES);
 
-                if (constructs){
+                if (constructs && constructs.length > 0){
+
                     if(bee.build(constructs[0]) == ERR_NOT_IN_RANGE) {
                         bee.moveTo(constructs[0], {visualizePathStyle: {stroke: '#ffffff'}});
                     }
