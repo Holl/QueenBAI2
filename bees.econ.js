@@ -186,6 +186,7 @@ module.exports = function(queenName, queenObj){
         else{
             var storageID = bee.memory.storage;
             var storage = Game.getObjectById(storageID);
+
             if(bee.transfer(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                 bee.moveTo(storage);
             }
@@ -266,13 +267,15 @@ module.exports = function(queenName, queenObj){
                     bee.memory.storage = storageObj[0].id;
                 }
                 else{
-                    var source = Game.rooms[queenName].controller.pos.findClosestByPath(FIND_SOURCES);
-                    var target = source.pos.findInRange(FIND_DROPPED_RESOURCES,1)[0];
-                    if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
-                        bee.moveTo(target.pos);
-                    }
-                    else if (!target){
-                        bee.memory.pickupID = common.findContainerIDFromSource(source.id); 
+                    if (Game.rooms[queenName].controller){
+                        var source = Game.rooms[queenName].controller.pos.findClosestByPath(FIND_SOURCES);
+                        var target = source.pos.findInRange(FIND_DROPPED_RESOURCES,1)[0];
+                        if(bee.pickup(target) == ERR_NOT_IN_RANGE) {
+                            bee.moveTo(target.pos);
+                        }
+                        else if (!target){
+                            bee.memory.pickupID = common.findContainerIDFromSource(source.id); 
+                        }
                     }
                 }
                 // This doesn't work pre storage, need a fix

@@ -10,6 +10,8 @@ var econBeesFunction = require('bees.econ');
 var common = require('commonFunctions');
 var maintenanceBeesFunction = require('bees.maintenance');
 var reconnaissanceBeesFunction = require('bees.reconnaissance');
+var defenseBeesFunction = require('bees.defense');
+var attackBeesFunction = require('bees.attack');
 
 module.exports = function(queenName, empressOrders, queenObj){
 
@@ -36,17 +38,27 @@ module.exports = function(queenName, empressOrders, queenObj){
             var exitArray = [exits[1], exits[3], exits[5], exits[7]];
             var containCheck = common.doesObjectHaveKeysOfArray(exitArray,scoutData);
             var finalCapture = '';
-            if (Memory.queens[queenName] && Memory.queens[queenName].finalCapture){  
+            if (Memory.queens[queenName] && Memory.queens[queenName].finalCapture){
                 var finalCapture = Memory.queens[queenName].finalCapture;
-                if (Game.rooms[finalCapture] && Game.rooms[finalCapture].controller.level == 4){
-                    Memory.empress.scoutData[finalCapture]['captured'] = true;
-                    Memory.queens[queenName].finalCapture = '';
+                var capRoom = Game.rooms[finalCapture];
+                if (capRoom){
+                    var storageObj = capRoom.find(FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_STORAGE}});
+                    var storage = storageObj[0];
+                    if (capRoom && capRoom.controller.level == 4 && storage){
+                        console.log("We're done helping " + finalCapture);
+                        Memory.empress.scoutReports[finalCapture]['captured'] = true;
+                        Memory.queens[queenName].finalCapture = '';                        
+                    }
+                    else{
+                        captureSpawning(queenName, queenObj, finalCapture, beeLevel);
+                    }
                 }
                 else{
-                    captureSpawning(queenName, queenObj, finalCapture, beeLevel)
+                    captureSpawning(queenName, queenObj, finalCapture, beeLevel);
                 }
             }
             else if (containCheck){
+                db.vLog("We need to pick a room");
                 var room = pickExpandRoom(exitArray, scoutData);
                 if (!Memory.queens){
                     Memory.queens = {};
@@ -57,6 +69,7 @@ module.exports = function(queenName, empressOrders, queenObj){
                 Memory.queens[queenName].finalCapture = room;
             }
             else{
+                db.vLog("We need to scout.");
                 reconnaissanceSpawning(queenName, queenObj, beeLevel, empressOrders);
             }
         }
@@ -69,10 +82,12 @@ module.exports = function(queenName, empressOrders, queenObj){
 
     econBeesFunction(queenName, queenObj);
     maintenanceBeesFunction(queenName, queenObj);
+    defenseBeesFunction(queenName, queenObj, empressOrders);
     
     captureFunciton(queenName, queenObj, empressOrders);
     reconnaissanceBeesFunction(queenName, queenObj, empressOrders);
-    defnseFunction(queenName, queenObj);
+    defnseFunction(queenName, queenObj, empressOrders);
+    attackBeesFunction(queenName, queenObj, empressOrders);
     
 }
 
@@ -112,10 +127,8 @@ function captureSpawning(queenName, queenObj, captureRoom, beeLevel){
     if (beeLevel > 2){
         var needCaptureBool = false;
         var roomObj = Game.rooms[captureRoom];
-        if (roomObj != undefined){
-            if (roomObj.controller.my != true){
-                needCaptureBool = true
-            }
+        if (roomObj == undefined || roomObj.controller.my != true){
+            needCaptureBool = true
         }
         if(typeof queenObj['bees']['captor'] == 'undefined' && needCaptureBool){
             db.vLog("Spawning Captor.");
@@ -137,6 +150,15 @@ function captureSpawning(queenName, queenObj, captureRoom, beeLevel){
                                         {'targetRoom':captureRoom}
                                     );
             return;
+        }
+        if (roomObj.find(FIND_HOSTILE_CREEPS).length > 0 && (queenObj['bees']['defender'] == undefined || queenObj['bees']['defender'] < 2)){
+            console.log("Hi")
+            creepCreator(queenObj['inactiveSpawns'][0], 
+                                        'defender', 
+                                        beeLevel,
+                                        queenName,
+                                        {'targetRoom':captureRoom}
+                                    );
         }
     }
 }
@@ -293,14 +315,22 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
                                 );
                 return;
             }
-            else if (droneArray == undefined || droneArray.length < noDrones){
+            else if (droneArray == undefined && queenObj["energyNow"] < 301){
                 db.vLog("Spawning Drone.");
+                creepCreator(queenObj['inactiveSpawns'][0], 
+                                    'drone', 
+                                    1,
+                                    queenName
+                                );
+                return;
+            }
+            else if (droneArray == undefined || droneArray.length < noDrones){
                 creepCreator(queenObj['inactiveSpawns'][0], 
                                     'drone', 
                                     beeLevel,
                                     queenName
                                 );
-                return;
+                return;   
             }
             else if (upgraderArray == undefined || upgraderArray.length < noUpgraders){
                 db.vLog("Spawning Upgrader.");
@@ -362,16 +392,18 @@ function defnseFunction(queenName, queenObj){
         if(hostiles.length > 0) {
             var username = hostiles[0].owner.username;
             Game.notify(`User ${username} spotted in room ${queenName}`);
-            var towers = Game.rooms[queenName].find(
-                FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_TOWER}});
-            towers.forEach(tower => tower.attack(hostiles[0]));
+            if (username != 'staxwell'){
+                var towers = Game.rooms[queenName].find(
+                    FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_TOWER}});
+                towers.forEach(tower => tower.attack(hostiles[0]));
+            }
         }
     }
 }
 
 // A simple check, based on our max energy storage, on how advanced we want our creeps to be.
 function calculateLevel(energyMax, queenName){
-    if (energyMax < 550 || Game.rooms[queenName].find(FIND_MY_CREEPS).length <= 1){
+    if (energyMax < 550 || Game.rooms[queenName].find(FIND_MY_CREEPS).length <= 2){
         return 1;
     }
     else if (550 <=  energyMax && energyMax < 800){

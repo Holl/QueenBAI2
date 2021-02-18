@@ -13,12 +13,18 @@ module.exports = function(queenName, queenObj){
 				var controller = room.controller;
 				var deposits = room.find(FIND_DEPOSITS);
 				var owner='';
-				if (controller.owner){
-					owner = controller.owner.username;
+				if(controller){
+					if (controller.owner){
+						owner = controller.owner.username;
+					}
+					else{
+						owner=false;
+					}
 				}
 				else{
-					owner=false;
+					owner=null; 
 				}
+				
 				if (spawnLoc == false){
 					Memory.empress.scoutReports[currentRoomName] = {
 						"capturable":false,
@@ -70,7 +76,7 @@ module.exports = function(queenName, queenObj){
 			ourBee.moveTo(25,25,ourBee.memory.targetRoom, {});
 		}
 		else if (false){
-			console.log("uhh")
+			// db.vLog("uhh")
 		}
 	}
 }

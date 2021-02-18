@@ -1,6 +1,17 @@
 var db = require('debugTools');
 
 module.exports = {
+	destroyNonOwnedBuildings(roomName){
+		// Loop through all buildings, if not owned by me, destroy
+		roomStruct = Game.rooms[roomName].find(FIND_STRUCTURES);
+
+		for (build in roomStruct){
+			if (roomStruct[build].owner != "KEVIN"){
+				console.log(roomStruct[build].destroy());
+				roomStruct[build].destroy();
+			}
+		}
+	},
 	doesObjectHaveKeysOfArray(array, obj){
 		return array.every(item => obj.hasOwnProperty(item));
 	},

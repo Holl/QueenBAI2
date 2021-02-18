@@ -23,6 +23,23 @@ function getBody(role, level){
         case "shipper": return getBody_Shipper(level);
         case "drone": return getBody_Shipper(level);
         case "upgrader": return getBody_Worker(level);
+        case "tank": return getBody_Tank(level);
+    }
+}
+
+function getBody_Tank(level){
+    switch (level){
+        case 3: return [TOUGH,
+                        MOVE]
+        case 4: return [TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, 
+                        TOUGH, TOUGH, TOUGH, TOUGH, TOUGH,
+                        MOVE, MOVE, MOVE, MOVE, MOVE,
+                        TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, 
+                        TOUGH, TOUGH, TOUGH, TOUGH, TOUGH,
+                        MOVE, MOVE, MOVE, MOVE, MOVE,
+                        TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, 
+                        TOUGH, TOUGH, TOUGH, TOUGH, TOUGH,
+                        MOVE, MOVE, MOVE, MOVE, MOVE]
     }
 }
 
