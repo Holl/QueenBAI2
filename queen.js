@@ -1,7 +1,10 @@
-const noHaulers = 2;
-const noShipper = 1;
-const noDrones = 2;
-const noUpgraders = 1;
+var noHaulers = 2;
+var noShipper = 1;
+var noDrones = 2;
+var noUpgraders = 1;
+
+var noHealers = 4;
+var noTanks = 4;
 
 var creepCreator = require('beeSpawner');
 var db = require('debugTools');
@@ -26,10 +29,7 @@ module.exports = function(queenName, empressOrders, queenObj){
     if(queenObj['inactiveSpawns'].length > 0){
         var beeLevel = calculateLevel(queenObj['energyMax'], queenName);
 
-        db.vLog("Bee level is " + beeLevel);
-
-        normalEconomySpawning(queenName, queenObj, beeLevel);
-        maintenanceSpawning(queenName, queenObj, beeLevel);
+        db.vLog("Bee level is " + beeLevel);        
 
         if (empressOrders == 'expand'){
             db.vLog("We have orders to expand!");
@@ -73,8 +73,8 @@ module.exports = function(queenName, empressOrders, queenObj){
                 reconnaissanceSpawning(queenName, queenObj, beeLevel, empressOrders);
             }
         }
-
-        // captureSpawning(queenName, queenObj, empressOrders, beeLevel);
+        maintenanceSpawning(queenName, queenObj, beeLevel);
+        normalEconomySpawning(queenName, queenObj, beeLevel);
     }
     else{
         db.vLog("There are no inactive spawns.")
@@ -194,6 +194,9 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
     var droneArray = queenObj['bees']['drone'];
     var upgraderArray = queenObj['bees']['upgrader'];
 
+    var tankArray = queenObj['bees']['tank'];
+    var healerArray = queenObj['bees']['healer'];
+
     var harvestedSourceArray=[];
     var hauledSourceObject={};
     var shippedSourceObject={};
@@ -303,6 +306,17 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
         // If we HAVE a real storage, we can be more specialized, and therefore, CPU efficent.
         // else if (storage) was here, but this all seems crazy.
         else if (storage){
+            noUpgraders = 1;
+            var storEng = Game.getObjectById(storage).store.energy;
+            if (storEng > 100000){
+                noUpgraders++;
+            }
+            if (storEng > 250000){
+                noUpgraders++;
+            }
+            if (storEng > 500000){
+                noUpgraders++;
+            }
             if(!shippedSourceObject[localSources[source]] || 
                 shippedSourceObject[localSources[source]].length < noShipper){
                 db.vLog("Spawning Shipper.");
@@ -316,7 +330,7 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
                 return;
             }
             else if (droneArray == undefined && queenObj["energyNow"] < 301){
-                db.vLog("Spawning Drone.");
+                db.vLog("Spawning Lvl 1 Drone.");
                 creepCreator(queenObj['inactiveSpawns'][0], 
                                     'drone', 
                                     1,
@@ -325,6 +339,7 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
                 return;
             }
             else if (droneArray == undefined || droneArray.length < noDrones){
+                db.vLog("Spawning big Drone.");
                 creepCreator(queenObj['inactiveSpawns'][0], 
                                     'drone', 
                                     beeLevel,
@@ -332,7 +347,7 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
                                 );
                 return;   
             }
-            else if (upgraderArray == undefined || upgraderArray.length < noUpgraders){
+            else if (upgraderArray == undefined){
                 db.vLog("Spawning Upgrader.");
                 creepCreator(queenObj['inactiveSpawns'][0], 
                                     'upgrader', 
@@ -341,6 +356,40 @@ function normalEconomySpawning(queenName, queenObj, beeLevel){
                                 );
                 return;
             }
+            else if (upgraderArray.length < noUpgraders){
+                db.vLog("Spawning Upgrader.  We should spin up " + noUpgraders);
+                creepCreator(queenObj['inactiveSpawns'][0], 
+                                    'upgrader', 
+                                    beeLevel,
+                                    queenName
+                                );
+                return;
+            }
+            // else if (queenName == "W28N29" && tankArray.length < noTanks ){
+            //     creepCreator(queenObj['inactiveSpawns'][0], 
+            //                             'tank', 
+            //                             beeLevel,
+            //                             queenName,
+            //                             {'targetRoom':"W27N26"}
+            //                         );
+            // }
+            // else if (queenName == "W29N29"){
+            //     creepCreator(queenObj['inactiveSpawns'][0], 
+            //                             'swarm', 
+            //                             beeLevel,
+            //                             queenName,
+            //                             {'targetRoom':"W27N27"}
+            //                         );
+            // }
+            // else if (queenName == "W27N29" && healerArray.length < noHealers){
+            //     creepCreator(queenObj['inactiveSpawns'][0], 
+            //                             'healer', 
+            //                             beeLevel,
+            //                             queenName,
+            //                             {'healRoom':"W27N27"}
+            //                         );
+            // }
+            
             return;
         }
         // If not, haulers do basically everything.
@@ -392,7 +441,7 @@ function defnseFunction(queenName, queenObj){
         if(hostiles.length > 0) {
             var username = hostiles[0].owner.username;
             Game.notify(`User ${username} spotted in room ${queenName}`);
-            if (username != 'staxwell'){
+            if (true){
                 var towers = Game.rooms[queenName].find(
                     FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_TOWER}});
                 towers.forEach(tower => tower.attack(hostiles[0]));

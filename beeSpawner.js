@@ -24,6 +24,20 @@ function getBody(role, level){
         case "drone": return getBody_Shipper(level);
         case "upgrader": return getBody_Worker(level);
         case "tank": return getBody_Tank(level);
+        case "healer": return getBody_Healer(level);
+    }
+}
+
+function getBody_Healer(level){
+    switch (level){
+        case 4: return [HEAL, MOVE, HEAL, MOVE, HEAL, MOVE]
+    }
+}
+
+function getBody_Swarm(level){
+    switch (level){
+        case 4: return [ATTACK,ATTACK,ATTACK,ATTACK,
+                        MOVE,MOVE,MOVE,MOVE]
     }
 }
 

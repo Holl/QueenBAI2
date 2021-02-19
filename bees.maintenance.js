@@ -45,7 +45,8 @@ module.exports = function(queenName, queenObj){
                     ourBee.repair(storedTarget);
                 }
                 else{
-                    if (repairArray[0].id){
+
+                    if (repairArray.length > 0 && repairArray[0].id){
                         ourBee.memory.repairTarget = repairArray[0].id;
                         repairArray.splice(0,1);
                     }  

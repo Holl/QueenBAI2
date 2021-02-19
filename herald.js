@@ -69,10 +69,14 @@ module.exports = function(){
             var level = Game.spawns[spawn].room.controller.level;
             var levelUpBool = 0;
             if (level == 1){
-                Memory[spawn] = {};
+                Memory[spawn] = {}; 
                 Memory[spawn]['level'] = 1;
             }
             else{
+                if (!Memory[spawn]){
+                    Memory[spawn] = {};
+                    Memory[spawn]['level'] = level;
+                }
                 if (Memory[spawn]['level'] != level){
                     db.vLog("Level up!");
                     Memory[spawn]['level'] = level;
